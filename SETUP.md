@@ -68,13 +68,33 @@ Kiểm tra driver đã cài (Windows): mở **ODBC Data Sources (64-bit)** → t
 
 ### 3.3. Bật xác thực SQL và TCP/IP
 
+> ⚠️ **Trước tiên hãy xem bạn có mấy instance SQL Server.**
+> Mở **SQL Server Configuration Manager** → `SQL Server Services`. Nếu trong danh sách đã có
+> một dòng đang ở trạng thái **Running** (ví dụ `SQL Server (MSSQLSERVER)`), **hãy dùng luôn instance đó**
+> và bỏ qua toàn bộ phần cấu hình SQLEXPRESS bên dưới. Máy bạn có thể cài sẵn nhiều instance
+> (thường do đã cài Visual Studio hoặc SQL Server bản đầy đủ từ trước).
+>
+> - Instance mặc định `MSSQLSERVER` → trong `.env` điền `DB_HOST=localhost` và `DB_PORT=1433`
+> - Instance `SQLEXPRESS` → trong `.env` điền `DB_HOST=localhost\SQLEXPRESS`, **để trống** `DB_PORT`
+>
+> **Tuyệt đối không đặt hai instance cùng dùng cổng 1433.** Cổng chỉ thuộc về một tiến trình:
+> instance thứ hai sẽ không khởi động được và Configuration Manager báo lỗi
+> *"The request failed or the service did not respond in a timely fashion"*.
+
 1. Mở **SSMS**, kết nối vào server → chuột phải tên server → **Properties** → **Security** →
    chọn **SQL Server and Windows Authentication mode** → OK.
 2. Mở **SQL Server Configuration Manager** →
-   `SQL Server Network Configuration` → `Protocols for SQLEXPRESS` → bật **TCP/IP** (Enabled).
-3. Chuột phải **TCP/IP** → **Properties** → tab **IP Addresses** → kéo xuống mục `IPAll` →
-   đặt **TCP Port = `1433`** → OK.
-4. Vào `SQL Server Services` → chuột phải **SQL Server (SQLEXPRESS)** → **Restart**.
+   `SQL Server Network Configuration` → `Protocols for <tên instance của bạn>` → bật **TCP/IP** (Enabled).
+3. Chuột phải **TCP/IP** → **Properties** → tab **IP Addresses** → kéo xuống mục `IPAll`:
+   - Nếu đây là instance **duy nhất** trên máy → đặt **TCP Port = `1433`**.
+   - Nếu máy **đã có instance khác đang chiếm cổng 1433** → đặt một cổng khác, ví dụ **`1434`**,
+     rồi khai báo đúng cổng đó trong `.env` (`DB_PORT=1434`).
+4. Vào `SQL Server Services` → chuột phải đúng instance của bạn → **Restart**.
+
+> 🔎 **Service không khởi động lên được?** Mở tệp nhật ký lỗi của SQL Server:
+> `C:\Program Files\Microsoft SQL Server\MSSQL##.<TÊN_INSTANCE>\MSSQL\Log\ERRORLOG`
+> (`##` là số phiên bản, ví dụ `MSSQL16.SQLEXPRESS`). Tìm dòng chứa `TCP port` hoặc
+> `Only one usage of each socket address` — đó chính là dấu hiệu trùng cổng.
 
 ### 3.4. Tạo cơ sở dữ liệu
 
@@ -318,6 +338,7 @@ gunicorn config.wsgi:application --bind 0.0.0.0:8000
 | `ModuleNotFoundError: No module named 'django'` | Chưa kích hoạt môi trường ảo. Chạy lại lệnh activate ở Bước 2. |
 | `django.db.utils.InterfaceError: ('IM002'...)` | Chưa cài ODBC Driver, hoặc `DB_DRIVER` sai tên (mục 3.2). |
 | `Login failed for user 'sa'` | Sai mật khẩu, hoặc chưa bật SQL Server Authentication (mục 3.3). |
+| Service SQL Server không Start được, báo *"did not respond in a timely fashion"* | Nhiều khả năng hai instance trùng cổng 1433. Xem lại khung cảnh báo ở mục 3.3 và tệp `ERRORLOG`. |
 | `Cannot open database "PCPartsDB"` | Chưa tạo database. Chạy lại câu lệnh `CREATE DATABASE` ở mục 3.4. |
 | `no such table: accounts_user` | Chưa chạy `python manage.py migrate` (Bước 6). |
 | Trang web không có định dạng CSS | Máy không vào được Internet (Tailwind & HTMX tải qua CDN). Kiểm tra kết nối mạng. |
