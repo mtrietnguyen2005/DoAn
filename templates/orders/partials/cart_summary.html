@@ -17,9 +17,9 @@
             <p class="text-rose-600 font-bold mt-1">{{ item.unit_price|vnd }}</p>
 
             <div class="flex flex-wrap items-center gap-3 mt-3">
-              {# method/action là phương án dự phòng: nếu HTMX không tải được
+              {% comment %} method/action là phương án dự phòng: nếu HTMX không tải được
                  (mất mạng, CDN lỗi) thì form vẫn gửi bình thường và view sẽ
-                 chuyển hướng về lại trang giỏ hàng. #}
+                 chuyển hướng về lại trang giỏ hàng. {% endcomment %}
               <form method="post" action="{% url 'orders:cart_update' item.product.pk %}"
                     hx-post="{% url 'orders:cart_update' item.product.pk %}"
                     hx-target="#cart-items" hx-swap="outerHTML"

@@ -5,7 +5,7 @@ Bộ kiểm thử được chia làm 3 giai đoạn. **Giai đoạn 1 đã hoàn
 | Giai đoạn | Công nghệ | Trạng thái |
 |---|---|---|
 | 1. Unit Test | `pytest` + `pytest-django` | ✅ Hoàn thành — 152 test |
-| 1b. Integration | `pytest-django` (qua HTTP) | ✅ Hoàn thành — 79 test |
+| 1b. Integration | `pytest-django` (qua HTTP) | ✅ Hoàn thành — 96 test |
 | 2. E2E Test | `pytest-playwright` (Page Object Model) | ✅ Hoàn thành — 45 test |
 | 3. API Test | Postman Collection + `newman` | ⚠️ Cần quyết định (xem mục *Vướng mắc*) |
 
@@ -197,10 +197,10 @@ Khi đổi model, chạy `pytest --create-db` để tạo lại.
 
 ```
 Unit          152    (tests/unit/)
-Integration    79    (tests/integration/)
+Integration    96    (tests/integration/)
 E2E            45    (tests/e2e/)
              -----
-TỔNG          276
+TỔNG          293
 ```
 
 ### Độ bao phủ logic nghiệp vụ cốt lõi
@@ -217,7 +217,15 @@ apps/core/admin_mixins.py     100%
 
 ---
 
-## Bốn lỗi thật được phát hiện nhờ Giai đoạn 2
+## Năm lỗi thật được phát hiện nhờ Giai đoạn 2
+
+**0. Ghi chú template hiện ra trang web như văn bản.**
+Django chỉ hỗ trợ `{# ... #}` trên **một dòng**. Bốn ghi chú nhiều dòng thêm vào
+`base.html`, `product_grid.html`, `product_list.html` và `cart_summary.html` không
+được coi là ghi chú mà in thẳng ra đầu mỗi trang. → Đã đổi sang
+`{% comment %} ... {% endcomment %}` và bổ sung `tests/integration/test_templates.py`
+quét toàn bộ template lẫn HTML render ra.
+
 
 **1. 🔴 Khách vãng lai không thêm được hàng vào giỏ (nghiêm trọng).**
 Trang chủ và trang danh sách sản phẩm không có form POST nào dành cho khách chưa
@@ -323,6 +331,7 @@ Ngoài ra Giai đoạn 2 bổ sung thêm kiểm thử tích hợp (qua HTTP, kh�
 | `tests/integration/test_catalog_views.py` | Lọc sản phẩm, HTMX partial, CRUD đánh giá |
 | `tests/integration/test_cart_views.py` | Giỏ hàng, mã giảm giá, đặt hàng, huỷ đơn |
 | `tests/integration/test_dashboard.py` | Dashboard admin và bảo vệ lỗi GROUP BY của SQL Server |
+| `tests/integration/test_templates.py` | Template không lộ mã nguồn ra trang web |
 
 ### Mô hình Page Object Model (POM)
 

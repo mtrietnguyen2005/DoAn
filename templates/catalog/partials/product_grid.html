@@ -5,9 +5,9 @@
       Tìm thấy <strong class="text-slate-900">{{ paginator.count }}</strong> sản phẩm
       {% if keyword %}cho từ khóa "<strong>{{ keyword }}</strong>"{% endif %}
     </p>
-    {# Ô sắp xếp dùng thuộc tính form="filter-form" của HTML5: nó được gửi
+    {% comment %} Ô sắp xếp dùng thuộc tính form="filter-form" của HTML5: nó được gửi
        kèm form lọc bên trái dù nằm ngoài form đó. Nhờ vậy khi HTMX không tải
-       được, việc sắp xếp vẫn hoạt động và giữ nguyên các bộ lọc đang chọn. #}
+       được, việc sắp xếp vẫn hoạt động và giữ nguyên các bộ lọc đang chọn. {% endcomment %}
     <div class="flex items-center gap-2">
       <label for="sort-select" class="text-sm text-slate-600">Sắp xếp:</label>
       <select id="sort-select" name="sort" form="filter-form"

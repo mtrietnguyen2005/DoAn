@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  {# Token CSRF cho các lời gọi fetch() trong static/js/cart.js. Bắt buộc phải có
+  {% comment %} Token CSRF cho các lời gọi fetch() trong static/js/cart.js. Bắt buộc phải có
      ở đây: khách chưa đăng nhập không gặp form POST nào trên trang danh sách hay
-     trang chủ, nên nếu thiếu thì thao tác "Thêm vào giỏ" sẽ bị chặn với lỗi 403. #}
+     trang chủ, nên nếu thiếu thì thao tác "Thêm vào giỏ" sẽ bị chặn với lỗi 403. {% endcomment %}
   <meta name="csrf-token" content="{{ csrf_token }}">
   <title>{% block title %}{{ SHOP_NAME }} · Linh kiện PC & Laptop chính hãng{% endblock %}</title>
   <meta name="description" content="{% block meta_description %}{{ SHOP_NAME }} - Cửa hàng linh kiện máy tính, laptop chính hãng: CPU, VGA, RAM, SSD, Mainboard...{% endblock %}">
