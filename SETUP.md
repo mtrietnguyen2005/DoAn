@@ -198,7 +198,7 @@ DB_TRUSTED_CONNECTION=False
 |---|---|
 | Dùng SQLite cho nhanh | `DB_ENGINE=sqlite` (các dòng `DB_*` khác bỏ qua) |
 | SQL Server bản Express có tên instance | `DB_HOST=localhost\SQLEXPRESS` và **để trống** `DB_PORT` |
-| Dùng Windows Authentication | `DB_TRUSTED_CONNECTION=True`, để trống `DB_USER` và `DB_PASSWORD` |
+| Dùng Windows Authentication *(dễ nhất — không cần tạo login SQL)* | Đặt `DB_TRUSTED_CONNECTION=True`. Hệ thống tự bỏ qua `DB_USER`/`DB_PASSWORD` và đăng nhập bằng chính tài khoản Windows của bạn |
 | Đã cài ODBC Driver 18 | `DB_DRIVER=ODBC Driver 18 for SQL Server` |
 
 Tạo `SECRET_KEY` ngẫu nhiên (chạy trong terminal đang bật venv):
@@ -359,7 +359,8 @@ gunicorn config.wsgi:application --bind 0.0.0.0:8000
 | `ProgrammingError ... is invalid in the ORDER BY clause` (SQL Server, lỗi 8127) | Truy vấn gom nhóm còn sót ORDER BY mặc định của model. Đã sửa ở dashboard — chạy `git pull` để lấy bản mới. Khi tự viết truy vấn gom nhóm, luôn thêm `.order_by()` trước `.values().annotate()` hoặc `.aggregate()`. |
 | `ModuleNotFoundError: No module named 'django'` | Chưa kích hoạt môi trường ảo. Chạy lại lệnh activate ở Bước 2. |
 | `django.db.utils.InterfaceError: ('IM002'...)` | Chưa cài ODBC Driver, hoặc `DB_DRIVER` sai tên (mục 3.2). |
-| `Login failed for user 'sa'` | Sai mật khẩu, hoặc chưa bật SQL Server Authentication (mục 3.3). |
+| `Login failed for user '...'` (lỗi 18456) | SQL Server chưa bật chế độ xác thực hỗn hợp, hoặc login chưa được tạo trên đúng instance. **Cách nhanh nhất:** đặt `DB_TRUSTED_CONNECTION=True` trong `.env` để dùng Windows Authentication — không cần tạo login SQL. Cách đúng bài: làm mục 3.3 phần 1 rồi tạo login theo mục 3.4. |
+| Trình duyệt báo `ERR_CONNECTION_REFUSED` dù đã chạy `runserver` | Server đã chết lúc khởi động. Xem lại cửa sổ PowerShell: nếu có `Exception in thread django-main-thread` thì đó mới là lỗi thật (thường là lỗi kết nối CSDL ở dòng trên). |
 | Service SQL Server không Start được, báo *"did not respond in a timely fashion"* | Nhiều khả năng hai instance trùng cổng 1433. Xem lại khung cảnh báo ở mục 3.3 và tệp `ERRORLOG`. |
 | `Cannot open database "PCPartsDB"` | Chưa tạo database. Chạy lại câu lệnh `CREATE DATABASE` ở mục 3.4. |
 | `no such table: accounts_user` | Chưa chạy `python manage.py migrate` (Bước 6). |

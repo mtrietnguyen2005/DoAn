@@ -89,22 +89,33 @@ ASGI_APPLICATION = "config.asgi.application"
 DB_ENGINE = config("DB_ENGINE", default="sqlite")
 
 if DB_ENGINE == "mssql":
-    DATABASES = {
-        "default": {
-            "ENGINE": "mssql",
-            "NAME": config("DB_NAME", default="PCPartsDB"),
-            "USER": config("DB_USER", default=""),
-            "PASSWORD": config("DB_PASSWORD", default=""),
-            "HOST": config("DB_HOST", default="localhost"),
-            "PORT": config("DB_PORT", default=""),
-            "OPTIONS": {
-                "driver": config("DB_DRIVER", default="ODBC Driver 17 for SQL Server"),
-                "extra_params": config("DB_EXTRA_PARAMS", default="TrustServerCertificate=yes"),
-                # Bỏ trống DB_USER/DB_PASSWORD và bật cờ này để dùng Windows Authentication
-                **({"trusted_connection": "yes"} if config("DB_TRUSTED_CONNECTION", default=False, cast=bool) else {}),
-            },
-        }
+    _mssql = {
+        "ENGINE": "mssql",
+        "NAME": config("DB_NAME", default="PCPartsDB"),
+        "HOST": config("DB_HOST", default="localhost"),
+        "PORT": config("DB_PORT", default=""),
+        "OPTIONS": {
+            "driver": config("DB_DRIVER", default="ODBC Driver 17 for SQL Server"),
+            "extra_params": config("DB_EXTRA_PARAMS", default="TrustServerCertificate=yes"),
+        },
     }
+
+    if config("DB_TRUSTED_CONNECTION", default=False, cast=bool):
+        # Windows Authentication: dùng chính tài khoản Windows đang đăng nhập,
+        # không cần tạo login SQL cũng không cần bật chế độ xác thực hỗn hợp.
+        #
+        # Lưu ý: mssql-django đọc khoá "Trusted_Connection" (viết hoa T và C) ở
+        # CẤP CAO NHẤT của DATABASES chứ không phải trong OPTIONS, và chỉ dùng
+        # nó khi USER để trống. Xem mssql/base.py, hàm get_new_connection().
+        _mssql["USER"] = ""
+        _mssql["PASSWORD"] = ""
+        _mssql["Trusted_Connection"] = "yes"
+    else:
+        # SQL Server Authentication: cần login SQL và bật chế độ xác thực hỗn hợp
+        _mssql["USER"] = config("DB_USER", default="")
+        _mssql["PASSWORD"] = config("DB_PASSWORD", default="")
+
+    DATABASES = {"default": _mssql}
 else:
     DATABASES = {
         "default": {
