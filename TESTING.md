@@ -462,3 +462,19 @@ Giờ chỉ còn một lệnh duy nhất: `pytest`.
 
 > Danh mục test case được sinh bằng script phân tích cú pháp (AST) kết hợp
 > `pytest --collect-only`, nên **luôn khớp với mã nguồn thực tế**.
+
+### File Excel danh mục test case
+
+`docs/DANH-MUC-TEST-CASE.xlsx` — 3 sheet:
+
+| Sheet | Nội dung |
+|---|---|
+| **Danh muc Test Case** | 232 dòng: tên test + ý nghĩa, dữ liệu chuẩn bị, các bước thực thi, kết quả mong đợi. Có lọc và cố định dòng tiêu đề |
+| **Tong hop** | Thống kê theo tầng và theo tệp |
+| **Chu giai Fixture** | Giải nghĩa toàn bộ dữ liệu mẫu |
+
+Sinh lại khi thêm test mới:
+```bash
+pytest -m "" --collect-only -q | grep "::" > nodes.txt
+python scripts/trich_test_case.py && python scripts/sinh_excel_test_case.py
+```
