@@ -4,7 +4,8 @@
 # ============================================================
 
 # ===== Giai đoạn 1: Unit Test =====
-pytest==9.1.1
+# Ghim nhánh pytest 8.x: pytest-playwright (Giai đoạn 2) yêu cầu pytest<9.0.0
+pytest==8.3.5
 pytest-django==4.14.0
 pytest-cov==7.1.0
 

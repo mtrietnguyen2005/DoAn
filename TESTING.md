@@ -54,6 +54,15 @@ DB_ENGINE=mssql pytest
 
 > Tài khoản CSDL cần quyền `CREATE DATABASE` vì Django tạo database tạm `test_PCPartsDB`.
 
+### Xử lý sự cố khi chạy test
+
+| Triệu chứng | Nguyên nhân & cách khắc phục |
+|---|---|
+| `collected 0 items` và **không** thấy dòng `configfile: pytest.ini` | Chưa có tệp `pytest.ini` / thư mục `tests/`. Chạy `git pull`. |
+| Header báo sai phiên bản Python, `plugins:` thiếu `django` | Lệnh `pytest` trống đang gọi bản pytest cài toàn cục. Dùng `python -m pytest` để bắt buộc dùng Python của môi trường ảo. Kiểm tra bằng `python -c "import sys; print(sys.executable)"`. |
+| `ResolutionImpossible ... pytest-playwright depends on pytest<9.0.0` | `pytest` bị ghim phiên bản 9.x. Bộ này ghim `pytest==8.3.5` vì `pytest-playwright` chưa hỗ trợ pytest 9. Chạy `git pull` rồi cài lại. |
+| `django.db.utils.OperationalError` khi chạy test | Đổi model nhưng database test cũ còn giữ cấu trúc cũ. Chạy `pytest --create-db`. |
+
 ---
 
 ## Giai đoạn 1 — Unit Test
