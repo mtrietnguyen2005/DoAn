@@ -20,6 +20,22 @@ from apps.orders.models import Order, PromoCode
 User = get_user_model()
 
 
+def pytest_report_header(config):
+    """In rõ bộ test đang chạy trên cấu hình và cơ sở dữ liệu nào.
+
+    Giúp phát hiện ngay trường hợp test vô tình chạy trên SQL Server thật
+    thay vì SQLite trong bộ nhớ.
+    """
+    from django.conf import settings
+
+    db = settings.DATABASES["default"]
+    engine = db["ENGINE"].rsplit(".", 1)[-1]
+    return [
+        f"settings: {settings.SETTINGS_MODULE}",
+        f"database: {engine} -> {db['NAME']}",
+    ]
+
+
 # ============================================================================
 # CẤU HÌNH CHUNG
 # ============================================================================
