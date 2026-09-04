@@ -75,8 +75,18 @@ class ProductAdmin(ModelAdmin):
         ("Trạng thái", {"fields": ("is_active", "is_featured", "stock_display", "view_count", "created_at", "updated_at")}),
     )
 
+    #: Phải khai báo tường minh: get_queryset() bên dưới dùng annotate() nên câu
+    #: lệnh có GROUP BY, và Django bỏ Meta.ordering với truy vấn gom nhóm. Thiếu
+    #: dòng này thì danh sách không có thứ tự và phân trang cho kết quả bấp bênh
+    #: (Django cảnh báo UnorderedObjectListWarning).
+    ordering = ("-created_at", "-id")
+
     def get_queryset(self, request):
-        return super().get_queryset(request).annotate(stock_total=Sum("batches__quantity_remaining"))
+        return (
+            super().get_queryset(request)
+            .annotate(stock_total=Sum("batches__quantity_remaining"))
+            .order_by(*self.ordering)
+        )
 
     @admin.display(description="Giá bán", ordering="price")
     def price_display(self, obj):

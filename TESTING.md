@@ -5,7 +5,8 @@ Bộ kiểm thử được chia làm 3 giai đoạn. **Giai đoạn 1 đã hoàn
 | Giai đoạn | Công nghệ | Trạng thái |
 |---|---|---|
 | 1. Unit Test | `pytest` + `pytest-django` | ✅ Hoàn thành — 152 test |
-| 2. E2E Test | `pytest-playwright` (Page Object Model) | ⏳ Chưa làm |
+| 1b. Integration | `pytest-django` (qua HTTP) | ✅ Hoàn thành — 79 test |
+| 2. E2E Test | `pytest-playwright` (Page Object Model) | ✅ Hoàn thành — 45 test |
 | 3. API Test | Postman Collection + `newman` | ⚠️ Cần quyết định (xem mục *Vướng mắc*) |
 
 ---
@@ -36,7 +37,8 @@ pytest -n auto                              # chạy song song cho nhanh
 | `inventory` | Nghiệp vụ kho: lô hàng, xuất/nhập/hoàn kho |
 | `finance` | Giá vốn COGS, tổng tiền, mã giảm giá |
 | `accounts` | Đăng ký, mật khẩu, phân quyền |
-| `e2e` | Kiểm thử giao diện (Giai đoạn 2) |
+| `integration` | Kiểm thử qua HTTP, không cần trình duyệt |
+| `e2e` | Kiểm thử giao diện bằng trình duyệt thật (Giai đoạn 2) |
 
 ### Test chạy trên CSDL nào?
 
@@ -191,6 +193,16 @@ Khi đổi model, chạy `pytest --create-db` để tạo lại.
 - **Phân quyền Read-only**: Địa chỉ, Đánh giá, Giao dịch kho — Admin thường chỉ xem được
   (kiểm chứng cả ở tầng `ModelAdmin` lẫn qua HTTP thật), superuser giữ toàn quyền
 
+### Tổng số test
+
+```
+Unit          152    (tests/unit/)
+Integration    79    (tests/integration/)
+E2E            45    (tests/e2e/)
+             -----
+TỔNG          276
+```
+
 ### Độ bao phủ logic nghiệp vụ cốt lõi
 
 ```
@@ -202,6 +214,37 @@ apps/accounts/models.py        92%
 apps/core/admin_mixins.py     100%
                        TỔNG    95%
 ```
+
+---
+
+## Bốn lỗi thật được phát hiện nhờ Giai đoạn 2
+
+**1. 🔴 Khách vãng lai không thêm được hàng vào giỏ (nghiêm trọng).**
+Trang chủ và trang danh sách sản phẩm không có form POST nào dành cho khách chưa
+đăng nhập, nên `base.html` không phát hành CSRF token và Django cũng không đặt
+cookie `csrftoken`. Hàm `getCsrfToken()` trong `cart.js` trả về chuỗi rỗng, POST
+"Thêm vào giỏ" bị chặn với lỗi 403. **Toàn bộ khách chưa đăng nhập không mua được
+hàng.** → Đã thêm `<meta name="csrf-token">` vào `base.html`.
+
+> Vì sao bộ test tích hợp không bắt được? `django.test.Client` **mặc định tắt
+> kiểm tra CSRF**. Chỉ trình duyệt thật mới lộ ra lỗi này. Đã bổ sung
+> `TestCsrfChoKhachVangLai` dùng `Client(enforce_csrf_checks=True)` để lần sau
+> bắt được mà không cần trình duyệt.
+
+**2. Giỏ hàng hỏng hoàn toàn nếu HTMX không tải được.**
+Các form tăng/giảm số lượng, xoá sản phẩm và xoá toàn bộ giỏ chỉ có thuộc tính
+`hx-post`, thiếu `method` và `action`. Nếu mạng chậm hoặc CDN lỗi, khách không sửa
+được gì trong giỏ. → Đã bổ sung `method="post"` và `action` làm phương án dự phòng.
+
+**3. Sắp xếp sản phẩm cũng hỏng khi thiếu HTMX.**
+Ô "Sắp xếp" nằm trong một `<form>` không có `method`/`action`, và `onchange` gọi
+thẳng `htmx.trigger()` — thiếu HTMX là lỗi JavaScript. → Đã dùng thuộc tính
+`form="filter-form"` của HTML5 để ô này được gửi kèm form lọc.
+
+**4. Danh sách sản phẩm trong Admin phân trang không ổn định.**
+`ProductAdmin.get_queryset()` dùng `annotate()` nên câu lệnh có `GROUP BY`, và
+Django bỏ `Meta.ordering` với truy vấn gom nhóm (Django cảnh báo
+`UnorderedObjectListWarning`). → Đã khai báo `ordering` tường minh.
 
 ---
 
@@ -221,9 +264,151 @@ Bộ test này không chỉ để "có test" — nó đã tìm ra hai lỗi có 
 
 ---
 
+## Giai đoạn 2 — E2E Test bằng Playwright
+
+### Cài đặt bổ sung
+
+```bash
+pip install -r requirements-dev.txt
+playwright install chromium        # tải trình duyệt (~150MB, chỉ cần chạy một lần)
+```
+
+### Chạy
+
+```bash
+pytest -m e2e                      # chế độ Headless (không hiện cửa sổ)
+pytest -m e2e --headed             # chế độ Headed - xem trình duyệt thao tác thật
+pytest -m e2e --headed --slowmo 500   # chậm lại 500ms mỗi thao tác để quan sát
+pytest -m e2e --browser firefox    # đổi trình duyệt (chromium/firefox/webkit)
+pytest -m e2e -k "huy_don"         # chạy riêng kịch bản huỷ đơn
+```
+
+> 💡 Chế độ `--headed --slowmo 500` rất hợp để **quay video demo đồ án**.
+
+### Máy không có Internet?
+
+Giao diện tải TailwindCSS, HTMX và phông chữ từ CDN. Khi chạy test, phông chữ và
+CSS **luôn bị chặn** (test dùng selector ngữ nghĩa nên không cần đến CSS), còn HTMX
+vẫn được tải để kịch bản đi đúng luồng thật.
+
+Nếu máy hoặc máy chủ CI không có Internet, bật chế độ chặn toàn bộ:
+
+```bash
+E2E_OFFLINE=1 pytest -m e2e
+```
+
+Khi đó giao diện chạy ở **chế độ dự phòng**: các form giỏ hàng gửi theo cách thông
+thường thay vì qua HTMX. Mọi kịch bản vẫn phải chạy đúng — đây cũng chính là cách
+bộ test kiểm chứng rằng website không sập khi HTMX tải lỗi.
+
+### Danh sách tệp
+
+| Tệp | Nội dung |
+|---|---|
+| `tests/e2e/conftest.py` | Fixture live server, dữ liệu mẫu, tự chụp ảnh khi gãy |
+| `tests/e2e/pages/base_page.py` | Lớp cơ sở cho mọi Page Object |
+| `tests/e2e/pages/auth_pages.py` | Trang đăng ký, đăng nhập |
+| `tests/e2e/pages/product_pages.py` | Danh sách và chi tiết sản phẩm |
+| `tests/e2e/pages/cart_pages.py` | Giỏ hàng, thanh toán, đặt hàng thành công |
+| `tests/e2e/pages/order_pages.py` | Lịch sử đơn, chi tiết đơn, huỷ đơn |
+| `tests/e2e/pages/admin_pages.py` | Đăng nhập admin, lô hàng, đơn hàng, dashboard |
+| `tests/e2e/test_customer_flow.py` | Kịch bản luồng khách hàng |
+| `tests/e2e/test_admin_flow.py` | Kịch bản luồng quản trị viên |
+
+Ngoài ra Giai đoạn 2 bổ sung thêm kiểm thử tích hợp (qua HTTP, không cần trình duyệt):
+
+| Tệp | Nội dung |
+|---|---|
+| `tests/integration/test_auth_views.py` | Đăng ký, đăng nhập, phiên làm việc, địa chỉ |
+| `tests/integration/test_catalog_views.py` | Lọc sản phẩm, HTMX partial, CRUD đánh giá |
+| `tests/integration/test_cart_views.py` | Giỏ hàng, mã giảm giá, đặt hàng, huỷ đơn |
+| `tests/integration/test_dashboard.py` | Dashboard admin và bảo vệ lỗi GROUP BY của SQL Server |
+
+### Mô hình Page Object Model (POM)
+
+Mọi selector đều nằm trong lớp Page Object, **không rải rác trong test**. Khi giao
+diện đổi, chỉ cần sửa một chỗ duy nhất thay vì đi sửa từng test.
+
+```python
+# Test đọc như một kịch bản, không thấy selector nào
+def test_huy_don_hop_le_va_hoan_kho(self, ...):
+    success = self._dat_hang(...)
+    detail = OrderDetailPage(page, site_url, code=success.order_code()).go()
+    assert detail.can_cancel() is True
+    detail.cancel_order("Đổi ý không mua nữa")
+    detail.expect_cancelled()
+```
+
+### Kịch bản đã bao phủ
+
+**Luồng khách hàng** (`test_customer_flow.py`)
+- Đăng ký tài khoản mới → tự động đăng nhập
+- Đăng nhập bằng tên đăng nhập và bằng email, báo lỗi khi sai mật khẩu
+- Tìm kiếm, lọc theo danh mục / thương hiệu / khoảng giá / còn hàng (qua HTMX)
+- Thêm vào giỏ, tăng giảm số lượng, xoá khỏi giỏ
+- Áp dụng mã giảm giá, báo lỗi khi mã không tồn tại
+- **Đặt hàng → kiểm tra tồn kho giảm đúng lô (FIFO)**
+- Xem lịch sử đơn hàng và lịch sử trạng thái
+- **Huỷ đơn hợp lệ → kiểm tra kho hoàn về đúng lô ban đầu**
+- Không cho huỷ đơn đang giao
+- Viết, sửa, xoá đánh giá sản phẩm
+
+**Luồng quản trị viên** (`test_admin_flow.py`)
+- Đăng nhập `/admin`, chặn sai mật khẩu, chặn khách hàng thường
+- **Thêm lô hàng mới → tồn kho tăng, có ghi vết giao dịch nhập kho**
+- **Duyệt trạng thái đơn: Chờ xác nhận → Đã xác nhận → Đang giao → Hoàn thành**
+- Admin huỷ đơn → kho hoàn về đúng lô
+- **Dashboard: 4 thẻ thống kê khớp database, đếm đơn theo trạng thái,
+  cảnh báo lô sắp hết hạn và sản phẩm sắp hết tồn kho**
+- Phân quyền read-only hiển thị đúng trên giao diện (không có nút Thêm)
+
+### Yêu cầu kỹ thuật đã đáp ứng
+
+| Yêu cầu | Cách thực hiện |
+|---|---|
+| Page Object Model | 7 lớp Page Object trong `tests/e2e/pages/` |
+| Auto-waiting | Dùng `expect()` và `wait_for_selector` của Playwright — **không có `sleep` nào trong bộ test** |
+| Chụp ảnh khi test gãy | Hook `pytest_runtest_makereport` + fixture `screenshot_on_failure`, ảnh lưu vào `tests/e2e/screenshots/` |
+| Headless & Headed | Mặc định Headless; thêm cờ `--headed` để xem trình duyệt thao tác |
+
+### Ảnh chụp khi test gãy
+
+Khi một test E2E thất bại, ảnh màn hình được lưu tự động:
+
+```
+📸 Đã lưu ảnh màn hình lúc test gãy: tests/e2e/screenshots/test_huy_don_hop_le.png
+```
+
+Thư mục `tests/e2e/screenshots/` đã nằm trong `.gitignore`.
+
+### Vài lưu ý kỹ thuật
+
+**Vì sao E2E phải dùng `django_db(transaction=True)`?**
+`live_server` dựng web server ở một luồng khác. Dữ liệu nằm trong transaction chưa
+commit sẽ không được luồng đó nhìn thấy, nên fixture phải commit thật.
+
+**Vì sao cần `DJANGO_ALLOW_ASYNC_UNSAFE`?**
+API đồng bộ của Playwright chạy bên trong một event loop. Django phát hiện có event
+loop thì chặn mọi truy vấn đồng bộ. Cờ này (đặt trong `tests/e2e/conftest.py`) cho
+phép fixture tạo dữ liệu bình thường.
+
+**Biến `PLAYWRIGHT_CHROMIUM_PATH`**
+Trỏ tới một bản Chromium đã cài sẵn trên máy chủ CI, thay vì bắt Playwright tải bản
+riêng. Không đặt thì Playwright dùng trình duyệt do `playwright install` tải về.
+
+---
+
 ## Vướng mắc cần quyết định
 
-### Giai đoạn 3 (Postman) chưa thực hiện được
+### ✅ Đã chốt: Giai đoạn 3 dùng phương án A (xây REST API)
+
+Sẽ cài `djangorestframework` + `djangorestframework-simplejwt`, viết Serializer và
+ViewSet cho Auth / Products / Orders / Warehouse, rồi mới làm Postman Collection.
+
+<details>
+<summary>Bối cảnh của quyết định này</summary>
+
+### Giai đoạn 3 (Postman) chưa thực hiện được với code hiện tại
 
 Dự án **không có REST API**. Toàn bộ là Django Templates render HTML phía server, chỉ có
 **3 endpoint trả JSON**, đều thuộc giỏ hàng (`/gio-hang/dong-bo/`, `/gio-hang/so-luong/`,
@@ -239,11 +424,19 @@ vốn không cần API. Ba lựa chọn:
 | **B. Test endpoint HTML hiện có** | Postman kiểm tra status code, redirect, session cookie. **Không có** JWT, không validate JSON schema |
 | **C. Bỏ Giai đoạn 3** | Chỉ làm Unit Test + Playwright |
 
-### Hai bộ test đang song song tồn tại
+</details>
 
-Bộ cũ kiểu `django.test.TestCase` vẫn nằm ở `apps/*/tests.py` (62 test, chạy bằng
-`python manage.py test`). Bộ mới dùng `pytest` nằm ở `tests/`. `pytest.ini` đặt
-`testpaths = tests` nên hai bộ không lẫn nhau.
+### ✅ Đã xử lý: hợp nhất về một bộ test duy nhất
 
-Đề xuất: sau khi xong Giai đoạn 2, **di chuyển nốt phần còn thiếu và xoá `apps/*/tests.py`**
-để chỉ còn một bộ duy nhất.
+Bộ cũ kiểu `django.test.TestCase` ở `apps/*/tests.py` (62 test) **đã được xoá**.
+Toàn bộ coverage được chuyển sang `tests/`:
+
+| Bộ cũ | Chuyển sang |
+|---|---|
+| `apps/accounts/tests.py` | `tests/unit/test_models.py` + `tests/integration/test_auth_views.py` |
+| `apps/catalog/tests.py` | `tests/unit/test_models.py` + `tests/integration/test_catalog_views.py` |
+| `apps/inventory/tests.py` | `tests/unit/test_services.py` |
+| `apps/orders/tests.py` | `tests/unit/test_services.py` |
+| `apps/core/tests.py` | `tests/integration/test_cart_views.py` + `test_dashboard.py` + `tests/unit/test_permissions.py` |
+
+Giờ chỉ còn một lệnh duy nhất: `pytest`.

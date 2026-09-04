@@ -5,18 +5,21 @@
       Tìm thấy <strong class="text-slate-900">{{ paginator.count }}</strong> sản phẩm
       {% if keyword %}cho từ khóa "<strong>{{ keyword }}</strong>"{% endif %}
     </p>
-    <form hx-get="{% url 'catalog:product_list' %}" hx-target="#product-results" hx-swap="outerHTML"
-          hx-include="#filter-form" hx-push-url="true" class="flex items-center gap-2">
-      <label class="text-sm text-slate-600">Sắp xếp:</label>
-      <select name="sort" onchange="this.form.requestSubmit ? htmx.trigger(this.form,'submit') : null"
-              hx-get="{% url 'catalog:product_list' %}" hx-target="#product-results" hx-swap="outerHTML"
-              hx-include="#filter-form" hx-push-url="true"
+    {# Ô sắp xếp dùng thuộc tính form="filter-form" của HTML5: nó được gửi
+       kèm form lọc bên trái dù nằm ngoài form đó. Nhờ vậy khi HTMX không tải
+       được, việc sắp xếp vẫn hoạt động và giữ nguyên các bộ lọc đang chọn. #}
+    <div class="flex items-center gap-2">
+      <label for="sort-select" class="text-sm text-slate-600">Sắp xếp:</label>
+      <select id="sort-select" name="sort" form="filter-form"
+              onchange="if (!window.htmx) this.form.submit();"
+              hx-get="{% url 'catalog:product_list' %}" hx-target="#product-results"
+              hx-swap="outerHTML" hx-include="#filter-form" hx-push-url="true"
               class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 outline-none">
         {% for key, option in sort_options.items %}
           <option value="{{ key }}" {% if key == current_sort %}selected{% endif %}>{{ option.1 }}</option>
         {% endfor %}
       </select>
-    </form>
+    </div>
   </div>
 
   {% if products %}

@@ -22,7 +22,8 @@
         </div>
 
         <input type="hidden" name="q" value="{{ keyword }}">
-        <input type="hidden" name="sort" value="{{ current_sort }}">
+        {# Không đặt ô ẩn "sort" ở đây: ô chọn sắp xếp bên phải đã khai báo
+           form="filter-form" nên tự được gửi kèm form này. #}
 
         <div>
           <h3 class="text-sm font-semibold mb-2">Danh mục</h3>

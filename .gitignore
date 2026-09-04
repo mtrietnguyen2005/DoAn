@@ -12,3 +12,10 @@ staticfiles/
 .idea/
 .vscode/
 node_modules/
+
+# Ảnh chụp màn hình khi test E2E gãy
+tests/e2e/screenshots/
+test-results/
+.pytest_cache/
+htmlcov/
+.coverage

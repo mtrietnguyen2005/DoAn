@@ -7,6 +7,10 @@
   const STORAGE_KEY = "linhkienpc_cart";
 
   function getCsrfToken() {
+    // Thẻ <meta name="csrf-token"> trong base.html luôn có trên mọi trang,
+    // kể cả với khách chưa đăng nhập. Hai nguồn còn lại là phương án dự phòng.
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta && meta.content) return meta.content;
     const input = document.querySelector("[name=csrfmiddlewaretoken]");
     if (input) return input.value;
     const match = document.cookie.match(/csrftoken=([^;]+)/);

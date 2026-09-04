@@ -17,7 +17,12 @@
             <p class="text-rose-600 font-bold mt-1">{{ item.unit_price|vnd }}</p>
 
             <div class="flex flex-wrap items-center gap-3 mt-3">
-              <form hx-post="{% url 'orders:cart_update' item.product.pk %}" hx-target="#cart-items" hx-swap="outerHTML"
+              {# method/action là phương án dự phòng: nếu HTMX không tải được
+                 (mất mạng, CDN lỗi) thì form vẫn gửi bình thường và view sẽ
+                 chuyển hướng về lại trang giỏ hàng. #}
+              <form method="post" action="{% url 'orders:cart_update' item.product.pk %}"
+                    hx-post="{% url 'orders:cart_update' item.product.pk %}"
+                    hx-target="#cart-items" hx-swap="outerHTML"
                     class="flex items-center border border-slate-300 rounded-lg overflow-hidden">
                 {% csrf_token %}
                 <button type="submit" name="quantity" value="{{ item.quantity|add:-1 }}" class="px-3 py-1.5 hover:bg-slate-100 font-bold">−</button>
@@ -26,7 +31,9 @@
                         class="px-3 py-1.5 hover:bg-slate-100 font-bold" {% if item.quantity >= item.stock %}disabled{% endif %}>+</button>
               </form>
               <span class="text-xs text-slate-400">Còn {{ item.stock }} sản phẩm</span>
-              <form hx-post="{% url 'orders:cart_remove' item.product.pk %}" hx-target="#cart-items" hx-swap="outerHTML" class="ml-auto">
+              <form method="post" action="{% url 'orders:cart_remove' item.product.pk %}"
+                    hx-post="{% url 'orders:cart_remove' item.product.pk %}"
+                    hx-target="#cart-items" hx-swap="outerHTML" class="ml-auto">
                 {% csrf_token %}
                 <button type="submit" class="text-xs text-rose-600 font-semibold hover:underline">🗑 Xóa</button>
               </form>
@@ -41,8 +48,10 @@
     </div>
     <div class="flex items-center justify-between mt-4">
       <a href="{% url 'catalog:product_list' %}" class="text-sm text-brand-600 font-semibold hover:underline">← Tiếp tục mua sắm</a>
-      <form hx-post="{% url 'orders:cart_clear' %}" hx-target="#cart-items" hx-swap="outerHTML"
-            hx-confirm="Xóa toàn bộ sản phẩm trong giỏ hàng?">
+      <form method="post" action="{% url 'orders:cart_clear' %}"
+            hx-post="{% url 'orders:cart_clear' %}" hx-target="#cart-items" hx-swap="outerHTML"
+            hx-confirm="Xóa toàn bộ sản phẩm trong giỏ hàng?"
+            onsubmit="return this.hasAttribute('hx-post') && window.htmx ? true : confirm('Xóa toàn bộ sản phẩm trong giỏ hàng?')">
         {% csrf_token %}
         <button type="submit" class="text-sm text-rose-600 font-semibold hover:underline">Xóa toàn bộ giỏ hàng</button>
       </form>
