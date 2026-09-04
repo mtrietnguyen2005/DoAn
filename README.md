@@ -11,7 +11,7 @@ với hệ thống **quản lý tồn kho theo lô hàng**, truy vết giao dị
 
 | Thành phần | Công nghệ |
 |---|---|
-| Backend & Frontend | Python 3.11+ / **Django 5.0** (Django Templates) |
+| Backend & Frontend | **Python 3.11 hoặc 3.12** / **Django 5.0** (Django Templates) |
 | Tương tác động | **HTMX 1.9** (lọc sản phẩm, giỏ hàng không tải lại trang) |
 | Giao diện | **TailwindCSS 3** (qua CDN) |
 | Cơ sở dữ liệu | **SQL Server** qua `mssql-django` (có thể chuyển SQLite để chạy thử) |
@@ -67,8 +67,10 @@ DoAn/
 
 ## 4. Cài đặt nhanh
 
+> ⛔ Yêu cầu **Python 3.11 hoặc 3.12** — không dùng 3.13/3.14 (xem lý do ở [SETUP.md](SETUP.md) Bước 1).
+
 ```bash
-python -m venv .venv
+python -m venv .venv             # Windows nhiều bản Python: py -3.12 -m venv .venv
 .venv\Scripts\activate          # Windows  (macOS/Linux: source .venv/bin/activate)
 pip install -r requirements.txt
 copy .env.example .env           # macOS/Linux: cp .env.example .env

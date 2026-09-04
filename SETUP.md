@@ -10,15 +10,26 @@ Tài liệu này hướng dẫn cài đặt và chạy website từ con số 0. 
 
 ## Bước 1 — Cài đặt Python
 
-1. Tải Python **3.11 trở lên** tại <https://www.python.org/downloads/>.
-2. Khi cài trên Windows, **bắt buộc tích vào ô `Add Python to PATH`** ở màn hình đầu tiên.
+> ⛔ **Bắt buộc dùng Python 3.11 hoặc 3.12. KHÔNG dùng 3.13 / 3.14.**
+> Django 5.0 chỉ hỗ trợ chính thức Python 3.10–3.12. Ngoài ra hai gói `Pillow` và `pyodbc`
+> chưa có bản dựng sẵn (wheel) cho Python 3.14, nên `pip` sẽ phải biên dịch từ mã nguồn C
+> và báo lỗi `Microsoft Visual C++ 14.0 or greater is required`.
+> **Cài đúng Python 3.12 là hết lỗi này, không cần tải C++ Build Tools.**
+
+1. Tải Python **3.12** tại <https://www.python.org/downloads/release/python-31210/>
+   → kéo xuống cuối trang, chọn **Windows installer (64-bit)**.
+2. Khi cài trên Windows, **bắt buộc tích vào ô `Add python.exe to PATH`** ở màn hình đầu tiên.
 3. Mở Command Prompt / PowerShell / Terminal và kiểm tra:
 
 ```bash
 python --version
 ```
 
-Kết quả mong đợi: `Python 3.11.x` (hoặc cao hơn). Nếu máy báo không tìm thấy lệnh, hãy thử `python3 --version`.
+Kết quả mong đợi: `Python 3.12.x`. Nếu máy báo không tìm thấy lệnh, hãy thử `python3 --version`.
+
+> 💡 **Máy đã lỡ cài sẵn Python 3.13/3.14 rồi?** Không cần gỡ. Cứ cài thêm 3.12 rồi ở Bước 2
+> tạo môi trường ảo bằng lệnh `py -3.12 -m venv .venv` — bộ khởi chạy `py` của Windows sẽ
+> chọn đúng phiên bản bạn chỉ định.
 
 ---
 
@@ -31,7 +42,15 @@ cd DoAn
 
 # Tạo môi trường ảo (venv)
 python -m venv .venv
+
+# Nếu máy có nhiều phiên bản Python, hãy chỉ định rõ 3.12 (Windows):
+#   py -3.12 -m venv .venv
 ```
+
+> ⚠️ **Phải `cd` vào thư mục dự án TRƯỚC KHI tạo môi trường ảo.** Nếu dấu nhắc lệnh vẫn còn là
+> `C:\Users\<tên bạn>` thì bạn đang đứng sai chỗ, và lệnh `pip install -r requirements.txt`
+> ở Bước 4 sẽ báo `Could not open requirements file`. Dấu nhắc đúng phải có tên thư mục dự án,
+> ví dụ `PS T:\DoAn>`.
 
 **Kích hoạt môi trường ảo:**
 
@@ -335,6 +354,8 @@ gunicorn config.wsgi:application --bind 0.0.0.0:8000
 
 | Thông báo lỗi | Nguyên nhân & cách khắc phục |
 |---|---|
+| `Microsoft Visual C++ 14.0 or greater is required` / `Failed to build Pillow pyodbc` | Đang dùng Python 3.13/3.14 — các gói chưa có wheel dựng sẵn nên phải biên dịch. Cài Python 3.12 rồi tạo lại venv bằng `py -3.12 -m venv .venv` (xem Bước 1). |
+| `Could not open requirements file: 'requirements.txt'` | Đang đứng sai thư mục. Chạy `cd T:\DoAn` (hoặc đường dẫn dự án của bạn), kiểm tra bằng `dir requirements.txt` rồi cài lại. |
 | `ModuleNotFoundError: No module named 'django'` | Chưa kích hoạt môi trường ảo. Chạy lại lệnh activate ở Bước 2. |
 | `django.db.utils.InterfaceError: ('IM002'...)` | Chưa cài ODBC Driver, hoặc `DB_DRIVER` sai tên (mục 3.2). |
 | `Login failed for user 'sa'` | Sai mật khẩu, hoặc chưa bật SQL Server Authentication (mục 3.3). |
