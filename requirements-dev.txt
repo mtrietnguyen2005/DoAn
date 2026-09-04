@@ -1,0 +1,17 @@
+# ============================================================
+# Thư viện phục vụ KIỂM THỬ (không cần khi chạy website)
+# Cài bằng:  pip install -r requirements-dev.txt
+# ============================================================
+
+# ===== Giai đoạn 1: Unit Test =====
+pytest==9.1.1
+pytest-django==4.14.0
+pytest-cov==7.1.0
+
+# ===== Giai đoạn 2: E2E Test (Playwright) =====
+# Sau khi cài, chạy thêm:  playwright install chromium
+pytest-playwright==0.7.1
+pytest-base-url==2.1.0
+
+# ===== Tiện ích =====
+pytest-xdist==3.6.1        # chạy test song song:  pytest -n auto

@@ -46,7 +46,7 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
 
     @admin.display(description="Họ tên")
     def full_name(self, obj):
-        return obj.get_full_name() or "—"
+        return obj.get_full_name() or "—"  # đã ghép theo thứ tự Họ + Tên
 
 
 @admin.register(Address)

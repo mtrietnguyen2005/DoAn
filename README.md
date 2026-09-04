@@ -92,9 +92,15 @@ Mở trình duyệt: <http://127.0.0.1:8000> · Trang quản trị: <http://127.
 
 ## 5. Chạy kiểm thử
 
+Xem tài liệu đầy đủ ở **[TESTING.md](TESTING.md)**.
+
 ```bash
-python manage.py test
+pip install -r requirements-dev.txt
+pytest                       # 152 unit test (pytest)
+pytest --cov=apps            # kèm báo cáo độ bao phủ
+python manage.py test        # 62 test kiểu django.test (bộ cũ)
 ```
 
-59 test bao phủ: xuất kho FIFO, hoàn kho đúng lô, tính COGS bình quân, chuyển trạng thái đơn, giỏ hàng,
-lọc sản phẩm, CRUD đánh giá, địa chỉ và phân quyền read-only trong Admin.
+Bộ `pytest` bao phủ 95% logic nghiệp vụ cốt lõi: xuất kho FIFO, hoàn kho đúng lô,
+giá vốn COGS bình quân gia quyền, công thức tổng tiền, mã giảm giá, chuyển trạng thái đơn,
+mã hoá mật khẩu và phân quyền read-only trong Admin.

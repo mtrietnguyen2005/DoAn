@@ -27,7 +27,16 @@ class User(AbstractUser):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return self.get_full_name() or self.username
+        return self.display_name
+
+    def get_full_name(self):
+        """Họ tên theo thứ tự tiếng Việt: Họ đứng trước, Tên đứng sau.
+
+        Ghi đè hàm của Django (vốn ghép first_name + last_name theo kiểu
+        phương Tây) vì biểu mẫu của hệ thống đặt last_name = "Họ",
+        first_name = "Tên".
+        """
+        return f"{self.last_name} {self.first_name}".strip()
 
     @property
     def display_name(self):
@@ -75,4 +84,7 @@ class Address(models.Model):
         if self.is_default:
             Address.objects.filter(user=self.user).exclude(pk=self.pk).update(is_default=False)
         elif not Address.objects.filter(user=self.user, is_default=True).exists():
+            # Địa chỉ đầu tiên của một người dùng luôn là địa chỉ mặc định.
+            # Gán lại cho cả instance đang giữ để nó không lệch với database.
+            self.is_default = True
             Address.objects.filter(pk=self.pk).update(is_default=True)
