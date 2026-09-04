@@ -38,21 +38,38 @@ pytest -n auto                              # chạy song song cho nhanh
 | `accounts` | Đăng ký, mật khẩu, phân quyền |
 | `e2e` | Kiểm thử giao diện (Giai đoạn 2) |
 
+### Test chạy trên CSDL nào?
+
+Bộ test dùng cấu hình riêng `config/settings_test.py`, **mặc định chạy SQLite trong bộ nhớ**
+bất kể `.env` của bạn đặt `DB_ENGINE` là gì. Lý do:
+
+* Nhanh hơn nhiều lần (toàn bộ 152 test chạy trong ~2 giây)
+* Không đụng tới database thật
+* Ai clone dự án về cũng chạy được ngay, không cần cài SQL Server
+
 ### ⚠️ Chạy test trên SQL Server trước khi nộp
 
-Mặc định test chạy trên SQLite cho nhanh. Nhưng **SQLite dễ tính hơn SQL Server** —
-dự án này từng có lỗi `GROUP BY` chỉ xuất hiện trên SQL Server mà SQLite không phát hiện.
-Trước khi demo, hãy chạy lại bộ test trên đúng CSDL thật:
+**SQLite dễ tính hơn SQL Server** — dự án này từng có lỗi `GROUP BY` chỉ xuất hiện trên
+SQL Server mà SQLite hoàn toàn không phát hiện. Nên chạy lại ít nhất một lần trên CSDL thật:
 
-```bash
+```powershell
 # Windows PowerShell
-$env:DB_ENGINE="mssql"; pytest; $env:DB_ENGINE="sqlite"
-
-# macOS / Linux
-DB_ENGINE=mssql pytest
+$env:TEST_ON_MSSQL="True"; python -m pytest; $env:TEST_ON_MSSQL="False"
 ```
 
-> Tài khoản CSDL cần quyền `CREATE DATABASE` vì Django tạo database tạm `test_PCPartsDB`.
+```bash
+# macOS / Linux
+TEST_ON_MSSQL=True pytest
+```
+
+> **Yêu cầu quyền:** Django phải tạo database tạm `test_PCPartsDB`, nên tài khoản CSDL
+> cần quyền tạo database. Nếu dùng Windows Authentication (`DB_TRUSTED_CONNECTION=True`)
+> và bạn là người cài SQL Server thì thường đã có sẵn quyền này.
+> Nếu dùng login SQL riêng, cấp quyền bằng SSMS:
+>
+> ```sql
+> ALTER SERVER ROLE dbcreator ADD MEMBER [pcparts_user];
+> ```
 
 ### Xử lý sự cố khi chạy test
 
@@ -61,6 +78,7 @@ DB_ENGINE=mssql pytest
 | `collected 0 items` và **không** thấy dòng `configfile: pytest.ini` | Chưa có tệp `pytest.ini` / thư mục `tests/`. Chạy `git pull`. |
 | Header báo sai phiên bản Python, `plugins:` thiếu `django` | Lệnh `pytest` trống đang gọi bản pytest cài toàn cục. Dùng `python -m pytest` để bắt buộc dùng Python của môi trường ảo. Kiểm tra bằng `python -c "import sys; print(sys.executable)"`. |
 | `ResolutionImpossible ... pytest-playwright depends on pytest<9.0.0` | `pytest` bị ghim phiên bản 9.x. Bộ này ghim `pytest==8.3.5` vì `pytest-playwright` chưa hỗ trợ pytest 9. Chạy `git pull` rồi cài lại. |
+| Toàn bộ test lỗi `Login failed for user` khi chạy trên SQL Server | Tài khoản chưa có quyền tạo database tạm `test_PCPartsDB`. SQL Server báo mã 18456 kể cả khi login đúng nhưng không mở được database. Cấp quyền `dbcreator` (xem trên), hoặc bỏ `TEST_ON_MSSQL` để chạy trên SQLite. |
 | `django.db.utils.OperationalError` khi chạy test | Đổi model nhưng database test cũ còn giữ cấu trúc cũ. Chạy `pytest --create-db`. |
 
 ---
@@ -72,6 +90,7 @@ DB_ENGINE=mssql pytest
 | Tệp | Nội dung | Số test |
 |---|---|---|
 | `pytest.ini` | Cấu hình pytest, khai báo marker | — |
+| `config/settings_test.py` | Cấu hình riêng khi test (mặc định SQLite trong bộ nhớ) | — |
 | `requirements-dev.txt` | Thư viện phục vụ kiểm thử | — |
 | `tests/conftest.py` | **Toàn bộ fixtures dữ liệu mẫu** | — |
 | `tests/unit/test_models.py` | Logic trong tầng Model | 57 |
