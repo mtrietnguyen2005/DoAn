@@ -449,3 +449,16 @@ Toàn bộ coverage được chuyển sang `tests/`:
 | `apps/core/tests.py` | `tests/integration/test_cart_views.py` + `test_dashboard.py` + `tests/unit/test_permissions.py` |
 
 Giờ chỉ còn một lệnh duy nhất: `pytest`.
+
+---
+
+## 📚 Tài liệu bảo vệ đồ án
+
+| Tài liệu | Nội dung |
+|---|---|
+| [docs/BAO-VE-DO-AN.md](docs/BAO-VE-DO-AN.md) | Kim tự tháp kiểm thử, nghiệp vụ được kiểm thử, 11 lỗi phát hiện được, câu hỏi phản biện |
+| [docs/DANH-MUC-TEST-CASE.md](docs/DANH-MUC-TEST-CASE.md) | Bảng chi tiết toàn bộ 293 ca (sinh tự động từ mã nguồn) |
+| [docs/CHIEN-LUOC-BAT-ELEMENT.md](docs/CHIEN-LUOC-BAT-ELEMENT.md) | Cách định vị phần tử, 3 bẫy đã gặp thật, auto-waiting, Page Object Model |
+
+> Danh mục test case được sinh bằng script phân tích cú pháp (AST) kết hợp
+> `pytest --collect-only`, nên **luôn khớp với mã nguồn thực tế**.
