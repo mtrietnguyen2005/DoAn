@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% load shop_extras %}
+{% block title %}Đơn hàng {{ order.code }} · {{ SHOP_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-8">
+  <nav class="text-sm text-slate-500 mb-6">
+    <a href="{% url 'orders:order_list' %}" class="hover:text-brand-600">← Quay lại danh sách đơn hàng</a>
+  </nav>
+
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div>
+      <h1 class="text-2xl font-extrabold">Đơn hàng {{ order.code }}</h1>
+      <p class="text-sm text-slate-500 mt-1">Đặt lúc {{ order.created_at|date:"H:i, d/m/Y" }}</p>
+    </div>
+    <span class="px-4 py-2 rounded-full text-sm font-bold
+      {% if order.status == 'pending' %}bg-amber-100 text-amber-700
+      {% elif order.status == 'confirmed' %}bg-blue-100 text-blue-700
+      {% elif order.status == 'shipping' %}bg-indigo-100 text-indigo-700
+      {% elif order.status == 'completed' %}bg-emerald-100 text-emerald-700
+      {% else %}bg-rose-100 text-rose-700{% endif %}">{{ order.get_status_display }}</span>
+  </div>
+
+  <div class="grid lg:grid-cols-[1fr_340px] gap-6">
+    <div class="space-y-4">
+      <!-- Sản phẩm -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5">
+        <h2 class="font-bold mb-4">Sản phẩm đã đặt</h2>
+        <div class="space-y-3">
+          {% for item in order.items.all %}
+            <div class="flex gap-4 pb-3 border-b border-slate-100 last:border-0 last:pb-0">
+              <div class="w-16 h-16 rounded-xl bg-slate-100 overflow-hidden shrink-0">
+                {% if item.product and item.product.thumbnail %}
+                  <img src="{{ item.product.thumbnail.url }}" alt="" class="w-full h-full object-cover">
+                {% else %}
+                  <div class="w-full h-full grid place-items-center text-2xl text-slate-300">🖥️</div>
+                {% endif %}
+              </div>
+              <div class="flex-1 min-w-0">
+                {% if item.product %}
+                  <a href="{{ item.product.get_absolute_url }}" class="font-medium text-sm hover:text-brand-600 line-clamp-2">{{ item.product_name }}</a>
+                {% else %}
+                  <p class="font-medium text-sm">{{ item.product_name }}</p>
+                {% endif %}
+                <p class="text-xs text-slate-500 mt-0.5">SKU: {{ item.product_sku }}</p>
+                <p class="text-sm text-slate-600 mt-1">{{ item.unit_price|vnd }} × {{ item.quantity }}</p>
+              </div>
+              <p class="font-bold shrink-0">{{ item.line_total|vnd }}</p>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Lịch sử trạng thái -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5">
+        <h2 class="font-bold mb-4">Lịch sử trạng thái đơn hàng</h2>
+        <ol class="relative border-l-2 border-slate-100 ml-2 space-y-5">
+          {% for history in order.status_history.all %}
+            <li class="ml-5">
+              <span class="absolute -left-[7px] w-3 h-3 rounded-full {% if forloop.last %}bg-brand-600 ring-4 ring-brand-100{% else %}bg-slate-300{% endif %}"></span>
+              <p class="font-semibold text-sm">{{ history.get_to_status_display }}</p>
+              <p class="text-xs text-slate-500 mt-0.5">{{ history.created_at|date:"H:i, d/m/Y" }}</p>
+              {% if history.note %}<p class="text-xs text-slate-600 mt-1">{{ history.note }}</p>{% endif %}
+              {% if history.changed_by %}<p class="text-xs text-slate-400 mt-0.5">Bởi: {{ history.changed_by.display_name }}</p>{% endif %}
+            </li>
+          {% endfor %}
+        </ol>
+      </div>
+
+      <!-- Hủy đơn -->
+      {% if order.can_cancel %}
+        <div class="bg-rose-50 border border-rose-200 rounded-2xl p-5">
+          <h2 class="font-bold text-rose-700 mb-1">Hủy đơn hàng</h2>
+          <p class="text-sm text-rose-600 mb-4">Bạn có thể hủy đơn khi đơn chưa được bàn giao cho đơn vị vận chuyển. Số lượng sản phẩm sẽ được hoàn lại kho.</p>
+          <form method="post" action="{% url 'orders:order_cancel' order.code %}" onsubmit="return confirm('Bạn chắc chắn muốn hủy đơn hàng {{ order.code }}?')" class="space-y-3">
+            {% csrf_token %}
+            {{ cancel_form.reason }}
+            <button type="submit" class="px-5 py-2.5 rounded-xl bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700">Xác nhận hủy đơn</button>
+          </form>
+        </div>
+      {% elif order.status == 'shipping' %}
+        <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-sm text-amber-800">
+          🚚 Đơn hàng đang được giao nên không thể hủy. Vui lòng liên hệ hotline <strong>{{ SHOP_HOTLINE }}</strong> nếu cần hỗ trợ.
+        </div>
+      {% endif %}
+    </div>
+
+    <aside class="space-y-4">
+      <div class="bg-white rounded-2xl border border-slate-200 p-5">
+        <h2 class="font-bold mb-4">Thông tin nhận hàng</h2>
+        <dl class="space-y-2 text-sm">
+          <div><dt class="text-slate-500 text-xs">Người nhận</dt><dd class="font-medium">{{ order.receiver_name }}</dd></div>
+          <div><dt class="text-slate-500 text-xs">Số điện thoại</dt><dd class="font-medium">{{ order.receiver_phone }}</dd></div>
+          {% if order.receiver_email %}<div><dt class="text-slate-500 text-xs">Email</dt><dd class="font-medium">{{ order.receiver_email }}</dd></div>{% endif %}
+          <div><dt class="text-slate-500 text-xs">Địa chỉ</dt><dd class="font-medium">{{ order.shipping_address }}</dd></div>
+          {% if order.customer_note %}<div><dt class="text-slate-500 text-xs">Ghi chú</dt><dd class="font-medium">{{ order.customer_note }}</dd></div>{% endif %}
+        </dl>
+      </div>
+
+      {% if order.shipping %}
+        <div class="bg-white rounded-2xl border border-slate-200 p-5">
+          <h2 class="font-bold mb-4">Vận chuyển</h2>
+          <dl class="space-y-2 text-sm">
+            <div class="flex justify-between"><dt class="text-slate-500">Đơn vị</dt><dd class="font-medium">{{ order.shipping.get_carrier_display }}</dd></div>
+            {% if order.shipping.tracking_code %}<div class="flex justify-between"><dt class="text-slate-500">Mã vận đơn</dt><dd class="font-medium">{{ order.shipping.tracking_code }}</dd></div>{% endif %}
+            {% if order.shipping.estimated_date %}<div class="flex justify-between"><dt class="text-slate-500">Dự kiến giao</dt><dd class="font-medium">{{ order.shipping.estimated_date|date:"d/m/Y" }}</dd></div>{% endif %}
+            {% if order.shipping.shipped_at %}<div class="flex justify-between"><dt class="text-slate-500">Đã bàn giao</dt><dd class="font-medium">{{ order.shipping.shipped_at|date:"d/m/Y" }}</dd></div>{% endif %}
+          </dl>
+        </div>
+      {% endif %}
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-5">
+        <h2 class="font-bold mb-4">Thanh toán</h2>
+        <dl class="space-y-2.5 text-sm">
+          <div class="flex justify-between"><dt class="text-slate-500">Tạm tính</dt><dd class="font-semibold">{{ order.subtotal|vnd }}</dd></div>
+          <div class="flex justify-between"><dt class="text-slate-500">Phí vận chuyển</dt><dd class="font-semibold">{% if order.shipping_fee %}{{ order.shipping_fee|vnd }}{% else %}<span class="text-emerald-600">Miễn phí</span>{% endif %}</dd></div>
+          {% if order.discount_amount %}<div class="flex justify-between text-emerald-600"><dt>Giảm giá{% if order.promo_code %} ({{ order.promo_code.code }}){% endif %}</dt><dd class="font-semibold">−{{ order.discount_amount|vnd }}</dd></div>{% endif %}
+          <div class="flex justify-between pt-3 border-t border-slate-200 text-base"><dt class="font-bold">Tổng cộng</dt><dd class="font-extrabold text-rose-600">{{ order.total|vnd }}</dd></div>
+          <div class="flex justify-between pt-2"><dt class="text-slate-500">Hình thức</dt><dd class="font-medium">{{ order.get_payment_method_display }}</dd></div>
+        </dl>
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

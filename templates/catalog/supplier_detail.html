@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ supplier.name }} · {{ SHOP_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+  <div class="bg-white rounded-2xl border border-slate-200 p-6 flex flex-wrap gap-6 mb-8">
+    {% if supplier.logo %}
+      <img src="{{ supplier.logo.url }}" alt="" class="w-24 h-24 rounded-2xl object-cover">
+    {% else %}
+      <div class="w-24 h-24 rounded-2xl bg-slate-100 grid place-items-center text-4xl">🏭</div>
+    {% endif %}
+    <div class="flex-1 min-w-[240px]">
+      <h1 class="text-2xl font-extrabold mb-2">{{ supplier.name }}</h1>
+      <p class="text-sm text-slate-600 mb-3">{{ supplier.description }}</p>
+      <div class="flex flex-wrap gap-4 text-sm text-slate-600">
+        {% if supplier.contact_person %}<span>👤 {{ supplier.contact_person }}</span>{% endif %}
+        {% if supplier.phone %}<span>☎ {{ supplier.phone }}</span>{% endif %}
+        {% if supplier.email %}<span>✉ {{ supplier.email }}</span>{% endif %}
+        {% if supplier.address %}<span>📍 {{ supplier.address }}</span>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <h2 class="text-xl font-bold mb-5">Sản phẩm từ nhà cung cấp này</h2>
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    {% for product in products %}
+      {% include "catalog/partials/product_card.html" %}
+    {% empty %}
+      <p class="col-span-full text-center text-slate-500 py-12">Chưa có sản phẩm nào.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

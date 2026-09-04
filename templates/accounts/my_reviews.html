@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load shop_extras %}
+{% block title %}Đánh giá của tôi · {{ SHOP_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+  <h1 class="text-2xl font-extrabold mb-6">Tài khoản của tôi</h1>
+  <div class="grid lg:grid-cols-[260px_1fr] gap-6">
+    {% include "accounts/_sidebar.html" %}
+    <div class="space-y-3">
+      <h2 class="font-bold text-lg mb-2">Đánh giá của tôi ({{ reviews|length }})</h2>
+      {% for review in reviews %}
+        <div class="bg-white rounded-2xl border border-slate-200 p-5">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0">
+              <a href="{{ review.product.get_absolute_url }}" class="font-semibold hover:text-brand-600">{{ review.product.name }}</a>
+              <div class="flex items-center gap-2 mt-1">
+                <span class="text-amber-400">{{ review.rating|stars }}</span>
+                <span class="text-xs text-slate-400">{{ review.created_at|date:"d/m/Y H:i" }}</span>
+              </div>
+              {% if review.title %}<p class="font-medium text-sm mt-2">{{ review.title }}</p>{% endif %}
+              <p class="text-sm text-slate-600 mt-1">{{ review.content }}</p>
+            </div>
+            <div class="flex gap-2 shrink-0">
+              <a href="{% url 'catalog:review_update' review.pk %}" class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold hover:bg-slate-50">✏️ Sửa</a>
+              <form method="post" action="{% url 'catalog:review_delete' review.pk %}" onsubmit="return confirm('Xóa đánh giá này?')">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{% url 'accounts:my_reviews' %}">
+                <button class="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold hover:bg-rose-100">🗑 Xóa</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <div class="bg-white rounded-2xl border border-slate-200 py-16 text-center">
+          <div class="text-5xl mb-3">⭐</div>
+          <p class="text-slate-500 mb-5">Bạn chưa đánh giá sản phẩm nào.</p>
+          <a href="{% url 'catalog:product_list' %}" class="px-5 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700">Mua sắm ngay</a>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

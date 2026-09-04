@@ -1,0 +1,173 @@
+{% load static shop_extras %}<!DOCTYPE html>
+<html lang="vi" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{{ SHOP_NAME }} · Linh kiện PC & Laptop chính hãng{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}{{ SHOP_NAME }} - Cửa hàng linh kiện máy tính, laptop chính hãng: CPU, VGA, RAM, SSD, Mainboard...{% endblock %}">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { brand: { 50:'#eff6ff',100:'#dbeafe',200:'#bfdbfe',300:'#93c5fd',400:'#60a5fa',500:'#3b82f6',600:'#2563eb',700:'#1d4ed8',800:'#1e40af',900:'#1e3a8a' } },
+          fontFamily: { sans: ['Inter','system-ui','-apple-system','Segoe UI','sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/htmx/1.9.12/htmx.min.js" integrity="sha512-ScNzcB92k6Q6NbY9EBoJdx6d1yGFCZ+xtVaLNwlbjMlDkC5xk3JhqQmzgQIkhVsrCE0M/vy8pVy4taSlqwuLUw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body data-authenticated="{% if user.is_authenticated %}true{% else %}false{% endif %}"
+      class="bg-slate-50 text-slate-800 font-sans antialiased flex flex-col min-h-screen">
+
+<!-- Thanh thông báo trên cùng -->
+<div class="bg-brand-700 text-white text-xs sm:text-sm">
+  <div class="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between gap-4">
+    <span class="hidden sm:inline">🚚 Miễn phí vận chuyển cho đơn hàng từ {{ FREE_SHIPPING_THRESHOLD|vnd }}</span>
+    <span class="flex items-center gap-4">
+      <a href="tel:{{ SHOP_HOTLINE }}" class="hover:underline">☎ Hotline: {{ SHOP_HOTLINE }}</a>
+      <a href="{% url 'core:contact' %}" class="hidden sm:inline hover:underline">Liên hệ</a>
+    </span>
+  </div>
+</div>
+
+<!-- Header -->
+<header class="bg-white shadow-sm sticky top-0 z-40">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="flex items-center gap-4 h-16">
+      <a href="{% url 'core:home' %}" class="flex items-center gap-2 shrink-0">
+        <span class="w-9 h-9 rounded-lg bg-brand-600 text-white grid place-items-center font-extrabold">LK</span>
+        <span class="font-extrabold text-lg hidden sm:block">{{ SHOP_NAME }}</span>
+      </a>
+
+      <form action="{% url 'catalog:product_list' %}" method="get" class="flex-1 max-w-xl">
+        <div class="relative">
+          <input type="search" name="q" value="{{ keyword|default:'' }}" placeholder="Tìm CPU, VGA, RAM, SSD, Laptop..."
+                 class="w-full rounded-full border border-slate-300 pl-4 pr-24 py-2.5 text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none">
+          <button type="submit" class="absolute right-1 top-1 bottom-1 px-5 rounded-full bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 transition">Tìm</button>
+        </div>
+      </form>
+
+      <nav class="flex items-center gap-1 sm:gap-2 ml-auto">
+        <a href="{% url 'orders:cart_detail' %}" class="relative p-2.5 rounded-lg hover:bg-slate-100 transition" title="Giỏ hàng">
+          <span class="text-xl">🛒</span>
+          <span id="cart-badge" class="absolute -top-0.5 -right-0.5 min-w-[20px] h-5 px-1 rounded-full bg-rose-500 text-white text-[11px] font-bold grid place-items-center {% if not cart_count %}hidden{% endif %}">{{ cart_count }}</span>
+        </a>
+
+        {% if user.is_authenticated %}
+          <div class="relative group">
+            <button class="flex items-center gap-2 p-1.5 pr-3 rounded-lg hover:bg-slate-100 transition">
+              {% if user.avatar %}
+                <img src="{{ user.avatar.url }}" alt="" class="w-8 h-8 rounded-full object-cover">
+              {% else %}
+                <span class="w-8 h-8 rounded-full bg-brand-100 text-brand-700 grid place-items-center font-bold text-sm">{{ user.display_name|first|upper }}</span>
+              {% endif %}
+              <span class="hidden md:block text-sm font-medium max-w-[120px] truncate">{{ user.display_name }}</span>
+            </button>
+            <div class="absolute right-0 top-full w-56 bg-white rounded-xl shadow-lg border border-slate-200 py-2 hidden group-hover:block z-50">
+              <a href="{% url 'accounts:profile' %}" class="block px-4 py-2 text-sm hover:bg-slate-50">👤 Hồ sơ của tôi</a>
+              <a href="{% url 'orders:order_list' %}" class="block px-4 py-2 text-sm hover:bg-slate-50">📦 Đơn hàng của tôi</a>
+              <a href="{% url 'accounts:address_list' %}" class="block px-4 py-2 text-sm hover:bg-slate-50">📍 Địa chỉ nhận hàng</a>
+              <a href="{% url 'accounts:my_reviews' %}" class="block px-4 py-2 text-sm hover:bg-slate-50">⭐ Đánh giá của tôi</a>
+              {% if user.is_staff %}
+                <a href="/admin/" class="block px-4 py-2 text-sm hover:bg-slate-50 border-t border-slate-100 mt-1 pt-2">⚙️ Trang quản trị</a>
+              {% endif %}
+              <form method="post" action="{% url 'accounts:logout' %}" class="border-t border-slate-100 mt-1 pt-1">
+                {% csrf_token %}
+                <button type="submit" class="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50">🚪 Đăng xuất</button>
+              </form>
+            </div>
+          </div>
+        {% else %}
+          <a href="{% url 'accounts:login' %}" class="px-3 py-2 text-sm font-medium rounded-lg hover:bg-slate-100 transition">Đăng nhập</a>
+          <a href="{% url 'accounts:register' %}" class="px-4 py-2 text-sm font-semibold rounded-lg bg-brand-600 text-white hover:bg-brand-700 transition hidden sm:block">Đăng ký</a>
+        {% endif %}
+      </nav>
+    </div>
+
+    <!-- Menu danh mục -->
+    <nav class="hidden md:flex items-center gap-1 h-11 text-sm border-t border-slate-100 overflow-x-auto">
+      <a href="{% url 'catalog:product_list' %}" class="px-3 py-1.5 rounded-lg font-medium hover:bg-slate-100 whitespace-nowrap">Tất cả sản phẩm</a>
+      {% for category in nav_categories %}
+        <a href="{% url 'catalog:product_list' %}?category={{ category.slug }}" class="px-3 py-1.5 rounded-lg hover:bg-slate-100 whitespace-nowrap">{{ category.icon }} {{ category.name }}</a>
+      {% endfor %}
+      <a href="{% url 'content:promotion_list' %}" class="px-3 py-1.5 rounded-lg hover:bg-slate-100 whitespace-nowrap text-rose-600 font-medium">🔥 Khuyến mãi</a>
+      <a href="{% url 'content:news_list' %}" class="px-3 py-1.5 rounded-lg hover:bg-slate-100 whitespace-nowrap">Tin tức</a>
+      <a href="{% url 'catalog:supplier_list' %}" class="px-3 py-1.5 rounded-lg hover:bg-slate-100 whitespace-nowrap">Nhà cung cấp</a>
+    </nav>
+  </div>
+</header>
+
+<!-- Thông báo -->
+{% if messages %}
+<div class="max-w-7xl mx-auto px-4 pt-4 space-y-2">
+  {% for message in messages %}
+    <div class="flex items-start gap-3 px-4 py-3 rounded-xl text-sm border
+      {% if message.tags == 'success' %}bg-emerald-50 border-emerald-200 text-emerald-800
+      {% elif message.tags == 'error' %}bg-rose-50 border-rose-200 text-rose-800
+      {% elif message.tags == 'warning' %}bg-amber-50 border-amber-200 text-amber-800
+      {% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %}">
+      <span class="flex-1">{{ message }}</span>
+      <button onclick="this.parentElement.remove()" class="opacity-50 hover:opacity-100">✕</button>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<main class="flex-1">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- Footer -->
+<footer class="bg-slate-900 text-slate-300 mt-16">
+  <div class="max-w-7xl mx-auto px-4 py-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+    <div>
+      <div class="flex items-center gap-2 mb-4">
+        <span class="w-9 h-9 rounded-lg bg-brand-600 text-white grid place-items-center font-extrabold">LK</span>
+        <span class="font-extrabold text-lg text-white">{{ SHOP_NAME }}</span>
+      </div>
+      <p class="text-sm leading-relaxed">Chuyên cung cấp linh kiện máy tính, laptop chính hãng với giá tốt nhất thị trường. Bảo hành uy tín, giao hàng toàn quốc.</p>
+    </div>
+    <div>
+      <h4 class="font-semibold text-white mb-4">Danh mục</h4>
+      <ul class="space-y-2 text-sm">
+        {% for category in nav_categories|slice:":6" %}
+          <li><a href="{% url 'catalog:product_list' %}?category={{ category.slug }}" class="hover:text-white transition">{{ category.name }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div>
+      <h4 class="font-semibold text-white mb-4">Hỗ trợ</h4>
+      <ul class="space-y-2 text-sm">
+        <li><a href="{% url 'core:about' %}" class="hover:text-white transition">Giới thiệu</a></li>
+        <li><a href="{% url 'core:contact' %}" class="hover:text-white transition">Liên hệ</a></li>
+        <li><a href="{% url 'content:news_list' %}" class="hover:text-white transition">Tin tức công nghệ</a></li>
+        <li><a href="{% url 'orders:order_list' %}" class="hover:text-white transition">Tra cứu đơn hàng</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4 class="font-semibold text-white mb-4">Liên hệ</h4>
+      <ul class="space-y-2 text-sm">
+        <li>📍 {{ SHOP_ADDRESS }}</li>
+        <li>☎ <a href="tel:{{ SHOP_HOTLINE }}" class="hover:text-white">{{ SHOP_HOTLINE }}</a></li>
+        <li>✉ <a href="mailto:{{ SHOP_EMAIL }}" class="hover:text-white">{{ SHOP_EMAIL }}</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="border-t border-slate-800 py-5 text-center text-xs text-slate-500">
+    © {% now "Y" %} {{ SHOP_NAME }}. Đồ án website quản lý linh kiện điện tử PC &amp; Laptop.
+  </div>
+</footer>
+
+<!-- Toast cho HTMX -->
+<div id="toast" class="fixed bottom-6 right-6 z-50 hidden px-5 py-3 rounded-xl bg-slate-900 text-white text-sm shadow-2xl"></div>
+
+<script src="{% static 'js/cart.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

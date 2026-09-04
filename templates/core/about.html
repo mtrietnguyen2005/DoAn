@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Giới thiệu · {{ SHOP_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-12">
+  <h1 class="text-3xl font-extrabold mb-6">Giới thiệu về {{ SHOP_NAME }}</h1>
+  <div class="bg-white rounded-2xl border border-slate-200 p-8 space-y-4 text-slate-700 leading-relaxed">
+    <p>{{ SHOP_NAME }} là hệ thống bán lẻ linh kiện máy tính và laptop, cung cấp đầy đủ các dòng sản phẩm: CPU, VGA, RAM, ổ cứng SSD/HDD, mainboard, nguồn máy tính, tản nhiệt, màn hình cùng các mẫu laptop gaming và văn phòng.</p>
+    <p>Toàn bộ hàng hoá được quản lý theo <strong>lô nhập kho</strong>, cho phép truy vết nguồn gốc, hạn bảo hành và giá vốn của từng lô — bảo đảm minh bạch cho khách hàng và chính xác trong hạch toán.</p>
+    <div class="grid sm:grid-cols-3 gap-4 pt-4">
+      <div class="p-5 rounded-xl bg-slate-50 text-center"><div class="text-3xl mb-2">🏆</div><p class="font-semibold text-sm">Hàng chính hãng 100%</p></div>
+      <div class="p-5 rounded-xl bg-slate-50 text-center"><div class="text-3xl mb-2">🚚</div><p class="font-semibold text-sm">Giao hàng toàn quốc</p></div>
+      <div class="p-5 rounded-xl bg-slate-50 text-center"><div class="text-3xl mb-2">🛠️</div><p class="font-semibold text-sm">Kỹ thuật hỗ trợ 24/7</p></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

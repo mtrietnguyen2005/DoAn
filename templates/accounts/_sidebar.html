@@ -1,0 +1,20 @@
+<aside class="bg-white rounded-2xl border border-slate-200 p-5 h-fit">
+  <div class="flex items-center gap-3 pb-4 mb-4 border-b border-slate-100">
+    {% if user.avatar %}
+      <img src="{{ user.avatar.url }}" alt="" class="w-12 h-12 rounded-full object-cover">
+    {% else %}
+      <span class="w-12 h-12 rounded-full bg-brand-100 text-brand-700 grid place-items-center font-bold text-lg">{{ user.display_name|first|upper }}</span>
+    {% endif %}
+    <div class="min-w-0">
+      <p class="font-bold truncate">{{ user.display_name }}</p>
+      <p class="text-xs text-slate-500 truncate">{{ user.email }}</p>
+    </div>
+  </div>
+  <nav class="space-y-1 text-sm">
+    <a href="{% url 'accounts:profile' %}" class="block px-3 py-2 rounded-lg hover:bg-slate-50 {% if request.resolver_match.url_name == 'profile' %}bg-brand-50 text-brand-700 font-semibold{% endif %}">👤 Hồ sơ của tôi</a>
+    <a href="{% url 'orders:order_list' %}" class="block px-3 py-2 rounded-lg hover:bg-slate-50 {% if request.resolver_match.url_name == 'order_list' or request.resolver_match.url_name == 'order_detail' %}bg-brand-50 text-brand-700 font-semibold{% endif %}">📦 Đơn hàng của tôi</a>
+    <a href="{% url 'accounts:address_list' %}" class="block px-3 py-2 rounded-lg hover:bg-slate-50 {% if 'address' in request.resolver_match.url_name %}bg-brand-50 text-brand-700 font-semibold{% endif %}">📍 Địa chỉ nhận hàng</a>
+    <a href="{% url 'accounts:my_reviews' %}" class="block px-3 py-2 rounded-lg hover:bg-slate-50 {% if request.resolver_match.url_name == 'my_reviews' %}bg-brand-50 text-brand-700 font-semibold{% endif %}">⭐ Đánh giá của tôi</a>
+    <a href="{% url 'accounts:password_change' %}" class="block px-3 py-2 rounded-lg hover:bg-slate-50 {% if request.resolver_match.url_name == 'password_change' %}bg-brand-50 text-brand-700 font-semibold{% endif %}">🔒 Đổi mật khẩu</a>
+  </nav>
+</aside>

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load shop_extras %}
+{% block title %}Đơn hàng của tôi · {{ SHOP_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+  <h1 class="text-2xl font-extrabold mb-6">Tài khoản của tôi</h1>
+  <div class="grid lg:grid-cols-[260px_1fr] gap-6">
+    {% include "accounts/_sidebar.html" %}
+
+    <div>
+      <div class="flex gap-2 overflow-x-auto pb-3 mb-4">
+        <a href="{% url 'orders:order_list' %}" class="px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap {% if not current_status %}bg-brand-600 text-white{% else %}bg-white border border-slate-200 hover:bg-slate-50{% endif %}">Tất cả</a>
+        {% for value, label in status_choices %}
+          <a href="?status={{ value }}" class="px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap {% if current_status == value %}bg-brand-600 text-white{% else %}bg-white border border-slate-200 hover:bg-slate-50{% endif %}">{{ label }}</a>
+        {% endfor %}
+      </div>
+
+      <div class="space-y-4">
+        {% for order in orders %}
+          <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+            <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3 bg-slate-50 border-b border-slate-200">
+              <div class="flex items-center gap-3">
+                <a href="{% url 'orders:order_detail' order.code %}" class="font-bold text-brand-600 hover:underline">{{ order.code }}</a>
+                <span class="text-xs text-slate-500">{{ order.created_at|date:"d/m/Y H:i" }}</span>
+              </div>
+              <span class="px-3 py-1 rounded-full text-xs font-bold
+                {% if order.status == 'pending' %}bg-amber-100 text-amber-700
+                {% elif order.status == 'confirmed' %}bg-blue-100 text-blue-700
+                {% elif order.status == 'shipping' %}bg-indigo-100 text-indigo-700
+                {% elif order.status == 'completed' %}bg-emerald-100 text-emerald-700
+                {% else %}bg-rose-100 text-rose-700{% endif %}">{{ order.get_status_display }}</span>
+            </div>
+            <div class="p-5">
+              <div class="space-y-2 mb-4">
+                {% for item in order.items.all|slice:":3" %}
+                  <div class="flex items-center gap-3 text-sm">
+                    <span class="w-6 h-6 rounded bg-slate-100 grid place-items-center text-xs shrink-0">{{ item.quantity }}</span>
+                    <span class="flex-1 line-clamp-1">{{ item.product_name }}</span>
+                    <span class="font-semibold shrink-0">{{ item.line_total|vnd }}</span>
+                  </div>
+                {% endfor %}
+                {% if order.items.all|length > 3 %}
+                  <p class="text-xs text-slate-400">... và {{ order.items.all|length|add:-3 }} sản phẩm khác</p>
+                {% endif %}
+              </div>
+              <div class="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-100">
+                <p class="text-sm">Tổng tiền: <strong class="text-rose-600 text-lg">{{ order.total|vnd }}</strong></p>
+                <a href="{% url 'orders:order_detail' order.code %}" class="px-4 py-2 rounded-xl border border-slate-300 text-sm font-semibold hover:bg-slate-50">Xem chi tiết</a>
+              </div>
+            </div>
+          </div>
+        {% empty %}
+          <div class="bg-white rounded-2xl border border-slate-200 py-16 text-center">
+            <div class="text-5xl mb-3">📦</div>
+            <p class="text-slate-500 mb-5">Bạn chưa có đơn hàng nào.</p>
+            <a href="{% url 'catalog:product_list' %}" class="px-5 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700">Mua sắm ngay</a>
+          </div>
+        {% endfor %}
+      </div>
+
+      {% if page_obj.has_other_pages %}
+        <nav class="flex justify-center gap-1 mt-8">
+          {% if page_obj.has_previous %}<a href="?{% query_replace page=page_obj.previous_page_number %}" class="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm hover:bg-slate-50">‹</a>{% endif %}
+          {% for num in page_obj.paginator.page_range %}
+            {% if num == page_obj.number %}<span class="px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-semibold">{{ num }}</span>
+            {% else %}<a href="?{% query_replace page=num %}" class="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm hover:bg-slate-50">{{ num }}</a>{% endif %}
+          {% endfor %}
+          {% if page_obj.has_next %}<a href="?{% query_replace page=page_obj.next_page_number %}" class="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm hover:bg-slate-50">›</a>{% endif %}
+        </nav>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

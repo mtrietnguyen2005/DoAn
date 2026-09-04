@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% load shop_extras %}
+{% block title %}Thanh toán · {{ SHOP_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+  <h1 class="text-2xl font-extrabold mb-6">Thanh toán đơn hàng</h1>
+
+  <form method="post" class="grid lg:grid-cols-[1fr_380px] gap-6">
+    {% csrf_token %}
+
+    <div class="space-y-4">
+      {% if addresses %}
+        <div class="bg-white rounded-2xl border border-slate-200 p-5">
+          <h2 class="font-bold mb-3">Chọn nhanh địa chỉ đã lưu</h2>
+          <div class="grid sm:grid-cols-2 gap-2">
+            {% for address in addresses %}
+              <button type="button"
+                      data-name="{{ address.full_name }}" data-phone="{{ address.phone }}"
+                      data-province="{{ address.province }}" data-district="{{ address.district }}"
+                      data-ward="{{ address.ward }}" data-street="{{ address.street }}"
+                      class="address-pick text-left p-3 rounded-xl border border-slate-200 hover:border-brand-400 hover:bg-brand-50 transition text-sm">
+                <span class="font-semibold">{{ address.full_name }}</span>
+                {% if address.is_default %}<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-brand-100 text-brand-700 font-bold">Mặc định</span>{% endif %}
+                <span class="block text-xs text-slate-500 mt-0.5">{{ address.phone }}</span>
+                <span class="block text-xs text-slate-500 line-clamp-1">{{ address.full_address }}</span>
+              </button>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-5">
+        <h2 class="font-bold mb-4">Thông tin nhận hàng</h2>
+        {% if form.non_field_errors %}
+          <div class="bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-xl px-4 py-3 mb-4">
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+          </div>
+        {% endif %}
+        <div class="grid sm:grid-cols-2 gap-4">
+          {% for field in form %}
+            {% if field.name != 'customer_note' and field.name != 'payment_method' and field.name != 'street' %}
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">{{ field.label }}{% if field.field.required %} <span class="text-rose-500">*</span>{% endif %}</label>
+                {{ field }}
+                {% for error in field.errors %}<p class="text-xs text-rose-600 mt-1">{{ error }}</p>{% endfor %}
+              </div>
+            {% endif %}
+          {% endfor %}
+          <div class="sm:col-span-2">
+            <label class="block text-sm font-medium text-slate-700 mb-1">{{ form.street.label }} <span class="text-rose-500">*</span></label>
+            {{ form.street }}
+            {% for error in form.street.errors %}<p class="text-xs text-rose-600 mt-1">{{ error }}</p>{% endfor %}
+          </div>
+          <div class="sm:col-span-2">
+            <label class="block text-sm font-medium text-slate-700 mb-1">{{ form.customer_note.label }}</label>
+            {{ form.customer_note }}
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-5">
+        <h2 class="font-bold mb-4">Hình thức thanh toán</h2>
+        <div class="space-y-2">
+          {% for radio in form.payment_method %}
+            <label class="flex items-center gap-3 p-4 rounded-xl border border-slate-200 cursor-pointer hover:border-brand-400 hover:bg-brand-50 transition">
+              {{ radio.tag }}
+              <span class="text-2xl">💵</span>
+              <span class="text-sm font-medium">{{ radio.choice_label }}</span>
+            </label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <aside class="lg:sticky lg:top-32 lg:self-start">
+      <div class="bg-white rounded-2xl border border-slate-200 p-5">
+        <h2 class="font-bold mb-4">Đơn hàng của bạn</h2>
+        <div class="space-y-3 max-h-72 overflow-y-auto pr-1 mb-4">
+          {% for item in items %}
+            <div class="flex gap-3">
+              <div class="relative w-14 h-14 rounded-lg bg-slate-100 overflow-hidden shrink-0">
+                {% if item.product.thumbnail %}<img src="{{ item.product.thumbnail.url }}" alt="" class="w-full h-full object-cover">{% endif %}
+                <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-slate-700 text-white text-[10px] font-bold grid place-items-center">{{ item.quantity }}</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-medium line-clamp-2">{{ item.product.name }}</p>
+                <p class="text-xs text-slate-500 mt-0.5">{{ item.unit_price|vnd }}</p>
+              </div>
+              <p class="text-sm font-semibold shrink-0">{{ item.line_total|vnd }}</p>
+            </div>
+          {% endfor %}
+        </div>
+
+        <dl class="space-y-2.5 text-sm border-t border-slate-200 pt-4">
+          <div class="flex justify-between"><dt class="text-slate-500">Tạm tính</dt><dd class="font-semibold">{{ subtotal|vnd }}</dd></div>
+          <div class="flex justify-between"><dt class="text-slate-500">Phí vận chuyển</dt>
+            <dd class="font-semibold">{% if shipping_fee %}{{ shipping_fee|vnd }}{% else %}<span class="text-emerald-600">Miễn phí</span>{% endif %}</dd></div>
+          {% if discount %}<div class="flex justify-between text-emerald-600"><dt>Giảm giá ({{ promo.code }})</dt><dd class="font-semibold">−{{ discount|vnd }}</dd></div>{% endif %}
+          <div class="flex justify-between pt-3 border-t border-slate-200 text-base">
+            <dt class="font-bold">Tổng cộng</dt><dd class="font-extrabold text-rose-600">{{ total|vnd }}</dd>
+          </div>
+        </dl>
+
+        <button type="submit" class="w-full mt-5 py-3.5 rounded-xl bg-brand-600 text-white font-bold hover:bg-brand-700 transition">
+          Đặt hàng ngay
+        </button>
+        <p class="text-xs text-slate-400 text-center mt-3">Bằng việc đặt hàng, bạn đồng ý với điều khoản của {{ SHOP_NAME }}.</p>
+      </div>
+    </aside>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.querySelectorAll(".address-pick").forEach(function (button) {
+    button.addEventListener("click", function () {
+      const d = button.dataset;
+      const set = (name, value) => { const el = document.querySelector('[name="' + name + '"]'); if (el) el.value = value; };
+      set("receiver_name", d.name); set("receiver_phone", d.phone);
+      set("province", d.province); set("district", d.district);
+      set("ward", d.ward); set("street", d.street);
+      document.querySelectorAll(".address-pick").forEach((b) => b.classList.remove("border-brand-500", "bg-brand-50"));
+      button.classList.add("border-brand-500", "bg-brand-50");
+    });
+  });
+</script>
+{% endblock %}

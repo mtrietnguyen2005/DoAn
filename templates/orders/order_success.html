@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load shop_extras %}
+{% block title %}Đặt hàng thành công · {{ SHOP_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-16 text-center">
+  <div class="w-20 h-20 mx-auto rounded-full bg-emerald-100 text-emerald-600 grid place-items-center text-4xl mb-6">✓</div>
+  <h1 class="text-3xl font-extrabold mb-2">Đặt hàng thành công!</h1>
+  <p class="text-slate-500 mb-8">Cảm ơn bạn đã mua sắm tại {{ SHOP_NAME }}. Chúng tôi sẽ liên hệ xác nhận đơn hàng trong thời gian sớm nhất.</p>
+
+  <div class="bg-white rounded-2xl border border-slate-200 p-6 text-left mb-6">
+    <div class="flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-100">
+      <div>
+        <p class="text-sm text-slate-500">Mã đơn hàng</p>
+        <p class="text-xl font-extrabold text-brand-600">{{ order.code }}</p>
+      </div>
+      <div class="text-right">
+        <p class="text-sm text-slate-500">Tổng thanh toán</p>
+        <p class="text-xl font-extrabold text-rose-600">{{ order.total|vnd }}</p>
+      </div>
+    </div>
+    <dl class="space-y-2 text-sm">
+      <div class="flex justify-between"><dt class="text-slate-500">Người nhận</dt><dd class="font-medium">{{ order.receiver_name }}</dd></div>
+      <div class="flex justify-between"><dt class="text-slate-500">Số điện thoại</dt><dd class="font-medium">{{ order.receiver_phone }}</dd></div>
+      <div class="flex justify-between gap-6"><dt class="text-slate-500 shrink-0">Địa chỉ giao</dt><dd class="font-medium text-right">{{ order.shipping_address }}</dd></div>
+      <div class="flex justify-between"><dt class="text-slate-500">Thanh toán</dt><dd class="font-medium">{{ order.get_payment_method_display }}</dd></div>
+      <div class="flex justify-between"><dt class="text-slate-500">Số sản phẩm</dt><dd class="font-medium">{{ order.total_quantity }}</dd></div>
+    </dl>
+  </div>
+
+  <div class="flex flex-wrap justify-center gap-3">
+    <a href="{% url 'orders:order_detail' order.code %}" class="px-6 py-3 rounded-xl bg-brand-600 text-white font-semibold hover:bg-brand-700">Xem chi tiết đơn hàng</a>
+    <a href="{% url 'catalog:product_list' %}" class="px-6 py-3 rounded-xl border border-slate-300 font-semibold hover:bg-slate-50">Tiếp tục mua sắm</a>
+  </div>
+</div>
+{% endblock %}

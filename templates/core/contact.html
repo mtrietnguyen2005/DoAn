@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Liên hệ · {{ SHOP_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-12">
+  <h1 class="text-3xl font-extrabold mb-6">Liên hệ</h1>
+  <div class="grid md:grid-cols-2 gap-6">
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
+      <div><p class="text-sm text-slate-500">Địa chỉ cửa hàng</p><p class="font-semibold">📍 {{ SHOP_ADDRESS }}</p></div>
+      <div><p class="text-sm text-slate-500">Hotline</p><a href="tel:{{ SHOP_HOTLINE }}" class="font-semibold text-brand-600">☎ {{ SHOP_HOTLINE }}</a></div>
+      <div><p class="text-sm text-slate-500">Email</p><a href="mailto:{{ SHOP_EMAIL }}" class="font-semibold text-brand-600">✉ {{ SHOP_EMAIL }}</a></div>
+      <div><p class="text-sm text-slate-500">Giờ làm việc</p><p class="font-semibold">8:00 – 21:00, tất cả các ngày trong tuần</p></div>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-200 p-6">
+      <h2 class="font-bold mb-4">Gửi câu hỏi cho chúng tôi</h2>
+      <form class="space-y-3" onsubmit="event.preventDefault(); alert('Cảm ơn bạn! Chúng tôi sẽ liên hệ lại sớm nhất.');">
+        <input type="text" placeholder="Họ tên" required class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-brand-500">
+        <input type="email" placeholder="Email" required class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-brand-500">
+        <textarea rows="4" placeholder="Nội dung" required class="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-brand-500"></textarea>
+        <button type="submit" class="w-full py-2.5 rounded-xl bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700">Gửi liên hệ</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

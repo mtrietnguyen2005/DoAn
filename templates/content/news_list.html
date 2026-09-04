@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load shop_extras %}
+{% block title %}Tin tức công nghệ · {{ SHOP_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+  <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+    <h1 class="text-2xl font-extrabold">Tin tức công nghệ</h1>
+    <form method="get" class="flex gap-2">
+      <input type="search" name="q" value="{{ keyword }}" placeholder="Tìm bài viết..."
+             class="rounded-lg border border-slate-300 px-4 py-2 text-sm outline-none focus:border-brand-500">
+      <button class="px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700">Tìm</button>
+    </form>
+  </div>
+
+  <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+    {% for article in news_list %}
+      <article class="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-md transition">
+        <a href="{{ article.get_absolute_url }}" class="block h-44 bg-slate-100">
+          {% if article.thumbnail %}
+            <img src="{{ article.thumbnail.url }}" alt="" class="w-full h-full object-cover">
+          {% else %}
+            <div class="w-full h-full grid place-items-center text-4xl text-slate-300">📰</div>
+          {% endif %}
+        </a>
+        <div class="p-5">
+          <p class="text-xs text-slate-400 mb-2">{{ article.published_at|date:"d/m/Y" }} · 👁 {{ article.view_count }}</p>
+          <h2 class="font-bold line-clamp-2 mb-2"><a href="{{ article.get_absolute_url }}" class="hover:text-brand-600">{{ article.title }}</a></h2>
+          <p class="text-sm text-slate-600 line-clamp-3">{{ article.summary }}</p>
+          {% if article.tag_list %}
+            <div class="flex flex-wrap gap-1.5 mt-3">
+              {% for tag in article.tag_list %}<span class="px-2 py-0.5 rounded-lg bg-slate-100 text-xs text-slate-600">#{{ tag }}</span>{% endfor %}
+            </div>
+          {% endif %}
+        </div>
+      </article>
+    {% empty %}
+      <p class="col-span-full text-center text-slate-500 py-16">Chưa có bài viết nào.</p>
+    {% endfor %}
+  </div>
+
+  {% if page_obj.has_other_pages %}
+    <nav class="flex justify-center gap-1 mt-10">
+      {% if page_obj.has_previous %}<a href="?{% query_replace page=page_obj.previous_page_number %}" class="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm hover:bg-slate-50">‹</a>{% endif %}
+      {% for num in page_obj.paginator.page_range %}
+        {% if num == page_obj.number %}<span class="px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-semibold">{{ num }}</span>
+        {% else %}<a href="?{% query_replace page=num %}" class="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm hover:bg-slate-50">{{ num }}</a>{% endif %}
+      {% endfor %}
+      {% if page_obj.has_next %}<a href="?{% query_replace page=page_obj.next_page_number %}" class="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm hover:bg-slate-50">›</a>{% endif %}
+    </nav>
+  {% endif %}
+</div>
+{% endblock %}

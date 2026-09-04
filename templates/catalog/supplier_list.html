@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Nhà cung cấp · {{ SHOP_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+  <h1 class="text-2xl font-extrabold mb-2">Nhà cung cấp</h1>
+  <p class="text-slate-500 mb-6">Các đối tác cung cấp linh kiện chính hãng của {{ SHOP_NAME }}.</p>
+  <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for supplier in suppliers %}
+      <a href="{% url 'catalog:supplier_detail' supplier.slug %}"
+         class="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-md hover:border-brand-300 transition flex gap-4">
+        {% if supplier.logo %}
+          <img src="{{ supplier.logo.url }}" alt="" class="w-16 h-16 rounded-xl object-cover shrink-0">
+        {% else %}
+          <div class="w-16 h-16 rounded-xl bg-slate-100 grid place-items-center text-2xl shrink-0">🏭</div>
+        {% endif %}
+        <div class="min-w-0">
+          <p class="font-bold truncate">{{ supplier.name }}</p>
+          <p class="text-xs text-slate-500 mt-0.5">{{ supplier.total_products }} sản phẩm</p>
+          {% if supplier.phone %}<p class="text-xs text-slate-500 mt-1">☎ {{ supplier.phone }}</p>{% endif %}
+          <p class="text-xs text-slate-600 line-clamp-2 mt-1">{{ supplier.description }}</p>
+        </div>
+      </a>
+    {% empty %}
+      <p class="col-span-full text-center text-slate-500 py-12">Chưa có nhà cung cấp nào.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

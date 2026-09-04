@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Đăng nhập · {{ SHOP_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto px-4 py-12">
+  <div class="bg-white rounded-2xl border border-slate-200 p-8">
+    <h1 class="text-2xl font-extrabold mb-1">Đăng nhập</h1>
+    <p class="text-sm text-slate-500 mb-6">Chào mừng bạn quay lại {{ SHOP_NAME }}!</p>
+
+    {% if form.non_field_errors %}
+      <div class="bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-xl px-4 py-3 mb-4">
+        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      {% for field in form %}
+        {% if field.name == 'remember_me' %}
+          <label class="flex items-center gap-2 text-sm cursor-pointer">
+            {{ field }} <span>{{ field.label }}</span>
+          </label>
+        {% else %}
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">{{ field.label }}</label>
+            {{ field }}
+            {% for error in field.errors %}<p class="text-xs text-rose-600 mt-1">{{ error }}</p>{% endfor %}
+          </div>
+        {% endif %}
+      {% endfor %}
+      <button type="submit" class="w-full py-3 rounded-xl bg-brand-600 text-white font-bold hover:bg-brand-700 transition">Đăng nhập</button>
+    </form>
+
+    <p class="text-center text-sm text-slate-500 mt-6">
+      Chưa có tài khoản? <a href="{% url 'accounts:register' %}" class="text-brand-600 font-semibold hover:underline">Đăng ký ngay</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

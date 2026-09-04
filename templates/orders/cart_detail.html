@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load shop_extras %}
+{% block title %}Giỏ hàng · {{ SHOP_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+  <h1 class="text-2xl font-extrabold mb-6">Giỏ hàng của bạn</h1>
+
+  <div class="grid lg:grid-cols-[1fr_360px] gap-6">
+    <div>
+      {% include "orders/partials/cart_summary.html" %}
+    </div>
+
+    <aside class="lg:sticky lg:top-32 lg:self-start space-y-4">
+      <div class="bg-white rounded-2xl border border-slate-200 p-5">
+        <h2 class="font-bold mb-4">Tóm tắt đơn hàng</h2>
+        <dl class="space-y-2.5 text-sm">
+          <div class="flex justify-between"><dt class="text-slate-500">Tạm tính</dt><dd class="font-semibold">{{ subtotal|vnd }}</dd></div>
+          <div class="flex justify-between"><dt class="text-slate-500">Phí vận chuyển</dt>
+            <dd class="font-semibold">{% if shipping_fee %}{{ shipping_fee|vnd }}{% else %}<span class="text-emerald-600">Miễn phí</span>{% endif %}</dd></div>
+          {% if discount %}
+            <div class="flex justify-between text-emerald-600"><dt>Giảm giá ({{ promo.code }})</dt><dd class="font-semibold">−{{ discount|vnd }}</dd></div>
+          {% endif %}
+          <div class="flex justify-between pt-3 border-t border-slate-200 text-base">
+            <dt class="font-bold">Tổng cộng</dt><dd class="font-extrabold text-rose-600">{{ total|vnd }}</dd>
+          </div>
+        </dl>
+
+        {% if items %}
+          <a href="{% url 'orders:checkout' %}" class="block w-full text-center mt-5 py-3 rounded-xl bg-brand-600 text-white font-bold hover:bg-brand-700 transition">
+            Tiến hành đặt hàng
+          </a>
+          {% if not user.is_authenticated %}
+            <p class="text-xs text-slate-400 text-center mt-2">Bạn cần đăng nhập để hoàn tất đơn hàng.</p>
+          {% endif %}
+        {% endif %}
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-5">
+        <h3 class="font-bold text-sm mb-3">🎟️ Mã giảm giá</h3>
+        {% if promo %}
+          <div class="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
+            <div>
+              <p class="font-bold text-sm text-emerald-700">{{ promo.code }}</p>
+              <p class="text-xs text-emerald-600">Giảm {{ discount|vnd }}</p>
+            </div>
+            <form method="post" action="{% url 'orders:promo_remove' %}">{% csrf_token %}
+              <button class="text-xs text-rose-600 font-semibold hover:underline">Gỡ mã</button>
+            </form>
+          </div>
+        {% else %}
+          <form method="post" action="{% url 'orders:promo_apply' %}" class="flex gap-2">
+            {% csrf_token %}
+            <input type="text" name="code" placeholder="Nhập mã giảm giá" required
+                   class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm uppercase outline-none focus:border-brand-500">
+            <button type="submit" class="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800">Áp dụng</button>
+          </form>
+        {% endif %}
+      </div>
+
+      <div class="bg-brand-50 border border-brand-200 rounded-2xl p-4 text-xs text-brand-800">
+        💡 Miễn phí vận chuyển cho đơn hàng từ <strong>{{ FREE_SHIPPING_THRESHOLD|vnd }}</strong>.
+      </div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

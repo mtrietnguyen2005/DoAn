@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ promotion.title }} · {{ SHOP_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+  <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden mb-8">
+    {% if promotion.banner %}
+      <img src="{{ promotion.banner.url }}" alt="" class="w-full h-56 object-cover">
+    {% else %}
+      <div class="h-40 bg-gradient-to-r from-rose-500 to-orange-400 grid place-items-center text-white text-5xl font-extrabold">-{{ promotion.discount_percent }}%</div>
+    {% endif %}
+    <div class="p-6">
+      <h1 class="text-2xl font-extrabold mb-2">{{ promotion.title }}</h1>
+      <p class="text-slate-600 mb-4 whitespace-pre-line">{{ promotion.description }}</p>
+      <div class="flex flex-wrap gap-4 text-sm">
+        <span class="px-3 py-1.5 rounded-lg bg-slate-100">📅 {{ promotion.start_date|date:"d/m/Y" }} – {{ promotion.end_date|date:"d/m/Y" }}</span>
+        {% if promotion.is_running %}
+          <span class="px-3 py-1.5 rounded-lg bg-rose-100 text-rose-700 font-bold">⏰ Còn {{ promotion.days_left }} ngày</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <h2 class="text-xl font-bold mb-5">Sản phẩm áp dụng ({{ products|length }})</h2>
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    {% for product in products %}
+      {% include "catalog/partials/product_card.html" %}
+    {% empty %}
+      <p class="col-span-full text-center text-slate-500 py-12">Chưa có sản phẩm nào trong chương trình này.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

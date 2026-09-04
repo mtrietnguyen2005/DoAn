@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Đăng ký · {{ SHOP_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto px-4 py-12">
+  <div class="bg-white rounded-2xl border border-slate-200 p-8">
+    <h1 class="text-2xl font-extrabold mb-1">Tạo tài khoản mới</h1>
+    <p class="text-sm text-slate-500 mb-6">Đăng ký để mua hàng và theo dõi đơn hàng dễ dàng hơn.</p>
+
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      {% for field in form %}
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">
+            {{ field.label }}{% if field.field.required %} <span class="text-rose-500">*</span>{% endif %}
+          </label>
+          {{ field }}
+          {% if field.help_text %}<p class="text-xs text-slate-400 mt-1">{{ field.help_text|safe }}</p>{% endif %}
+          {% for error in field.errors %}<p class="text-xs text-rose-600 mt-1">{{ error }}</p>{% endfor %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="w-full py-3 rounded-xl bg-brand-600 text-white font-bold hover:bg-brand-700 transition">Đăng ký</button>
+    </form>
+
+    <p class="text-center text-sm text-slate-500 mt-6">
+      Đã có tài khoản? <a href="{% url 'accounts:login' %}" class="text-brand-600 font-semibold hover:underline">Đăng nhập</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

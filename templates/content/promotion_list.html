@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Khuyến mãi · {{ SHOP_NAME }}{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+  <h1 class="text-2xl font-extrabold mb-6">🔥 Chương trình khuyến mãi</h1>
+
+  <h2 class="font-bold text-lg mb-4">Đang diễn ra</h2>
+  <div class="grid md:grid-cols-3 gap-5 mb-10">
+    {% for promotion in running_promotions %}
+      <a href="{{ promotion.get_absolute_url }}" class="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-md transition">
+        {% if promotion.banner %}
+          <img src="{{ promotion.banner.url }}" alt="" class="w-full h-40 object-cover">
+        {% else %}
+          <div class="h-40 bg-gradient-to-r from-rose-500 to-orange-400 grid place-items-center text-white text-4xl font-extrabold">-{{ promotion.discount_percent }}%</div>
+        {% endif %}
+        <div class="p-5">
+          <h3 class="font-bold mb-1">{{ promotion.title }}</h3>
+          <p class="text-sm text-slate-600 line-clamp-2 mb-3">{{ promotion.description }}</p>
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-500">{{ promotion.start_date|date:"d/m" }} – {{ promotion.end_date|date:"d/m/Y" }}</span>
+            <span class="px-2 py-1 rounded-lg bg-rose-100 text-rose-700 font-bold">Còn {{ promotion.days_left }} ngày</span>
+          </div>
+        </div>
+      </a>
+    {% empty %}
+      <p class="col-span-full text-center text-slate-500 py-12 bg-white rounded-2xl border border-slate-200">Hiện chưa có chương trình khuyến mãi nào đang diễn ra.</p>
+    {% endfor %}
+  </div>
+
+  {% if upcoming_promotions %}
+    <h2 class="font-bold text-lg mb-4">Sắp diễn ra</h2>
+    <div class="grid md:grid-cols-3 gap-5">
+      {% for promotion in upcoming_promotions %}
+        <div class="bg-white rounded-2xl border border-slate-200 p-5">
+          <h3 class="font-bold mb-1">{{ promotion.title }}</h3>
+          <p class="text-sm text-slate-600 line-clamp-2 mb-2">{{ promotion.description }}</p>
+          <p class="text-xs text-slate-500">Bắt đầu: {{ promotion.start_date|date:"d/m/Y" }}</p>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

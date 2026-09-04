@@ -1,0 +1,128 @@
+{% extends "unfold/layouts/base_simple.html" %}
+{% load i18n humanize %}
+
+{% block breadcrumbs %}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Thẻ thống kê -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    {% for card in stat_cards %}
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-lg p-5 shadow-sm">
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{{ card.title }}</p>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ card.value|intcomma }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ card.sub }}</p>
+          </div>
+          <span class="material-symbols-outlined text-primary-600 text-3xl">{{ card.icon }}</span>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Doanh thu & lợi nhuận -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-lg p-5">
+      <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Doanh thu tháng này</p>
+      <p class="text-2xl font-bold text-emerald-600 mt-2">{{ revenue_month|intcomma }}đ</p>
+      <p class="text-xs text-gray-500 mt-1">Chỉ tính đơn hàng đã hoàn thành</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-lg p-5">
+      <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Lợi nhuận gộp tháng này</p>
+      <p class="text-2xl font-bold text-blue-600 mt-2">{{ profit_month|intcomma }}đ</p>
+      <p class="text-xs text-gray-500 mt-1">Doanh thu − giá vốn (COGS) tại thời điểm bán</p>
+    </div>
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-lg p-5">
+      <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Đơn hàng theo trạng thái</p>
+      <div class="space-y-1.5">
+        {% for row in order_status_counts %}
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-gray-600 dark:text-gray-300">{{ row.label }}</span>
+            <span class="font-bold text-gray-900 dark:text-white">{{ row.value }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Cảnh báo kho -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
+      <div class="px-5 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center gap-2">
+        <span class="material-symbols-outlined text-amber-500">schedule</span>
+        <h3 class="font-semibold text-gray-900 dark:text-white">Lô hàng sắp hết hạn ({{ expiry_warning_days }} ngày tới)</h3>
+      </div>
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-gray-900 text-xs text-gray-500 uppercase">
+          <tr><th class="text-left px-5 py-2">Mã lô</th><th class="text-left px-5 py-2">Sản phẩm</th><th class="text-right px-5 py-2">Còn lại</th><th class="text-right px-5 py-2">Hạn</th></tr>
+        </thead>
+        <tbody>
+          {% for batch in expiring_batches %}
+            <tr class="border-t border-gray-100 dark:border-gray-800">
+              <td class="px-5 py-2"><a href="/admin/inventory/batch/{{ batch.pk }}/change/" class="text-primary-600 font-medium">{{ batch.batch_code }}</a></td>
+              <td class="px-5 py-2 text-gray-700 dark:text-gray-300">{{ batch.product.name|truncatechars:34 }}</td>
+              <td class="px-5 py-2 text-right font-semibold">{{ batch.quantity_remaining }}</td>
+              <td class="px-5 py-2 text-right {% if batch.days_to_expiry < 0 %}text-red-600{% else %}text-amber-600{% endif %} font-semibold">
+                {% if batch.days_to_expiry < 0 %}Hết hạn{% else %}{{ batch.days_to_expiry }} ngày{% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="px-5 py-6 text-center text-gray-400">Không có lô hàng nào sắp hết hạn 🎉</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
+      <div class="px-5 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center gap-2">
+        <span class="material-symbols-outlined text-red-500">inventory_2</span>
+        <h3 class="font-semibold text-gray-900 dark:text-white">Sản phẩm sắp hết / hết tồn kho (≤ {{ low_stock_threshold }})</h3>
+      </div>
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-gray-900 text-xs text-gray-500 uppercase">
+          <tr><th class="text-left px-5 py-2">SKU</th><th class="text-left px-5 py-2">Sản phẩm</th><th class="text-right px-5 py-2">Tồn kho</th></tr>
+        </thead>
+        <tbody>
+          {% for product in low_stock_products %}
+            <tr class="border-t border-gray-100 dark:border-gray-800">
+              <td class="px-5 py-2"><a href="/admin/catalog/product/{{ product.pk }}/change/" class="text-primary-600 font-medium">{{ product.sku }}</a></td>
+              <td class="px-5 py-2 text-gray-700 dark:text-gray-300">{{ product.name|truncatechars:34 }}</td>
+              <td class="px-5 py-2 text-right font-bold {% if not product.stock_total %}text-red-600{% else %}text-amber-600{% endif %}">{{ product.stock_total|default:0 }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="3" class="px-5 py-6 text-center text-gray-400">Tồn kho tất cả sản phẩm đều ổn định 🎉</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Đơn hàng gần đây -->
+  <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
+    <div class="px-5 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+      <h3 class="font-semibold text-gray-900 dark:text-white">Đơn hàng gần đây</h3>
+      <a href="/admin/orders/order/" class="text-sm text-primary-600 font-medium">Xem tất cả →</a>
+    </div>
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-900 text-xs text-gray-500 uppercase">
+        <tr><th class="text-left px-5 py-2">Mã đơn</th><th class="text-left px-5 py-2">Khách hàng</th><th class="text-right px-5 py-2">Tổng tiền</th><th class="text-left px-5 py-2">Trạng thái</th><th class="text-right px-5 py-2">Ngày đặt</th></tr>
+      </thead>
+      <tbody>
+        {% for order in recent_orders %}
+          <tr class="border-t border-gray-100 dark:border-gray-800">
+            <td class="px-5 py-2"><a href="/admin/orders/order/{{ order.pk }}/change/" class="text-primary-600 font-medium">{{ order.code }}</a></td>
+            <td class="px-5 py-2 text-gray-700 dark:text-gray-300">{{ order.receiver_name }}</td>
+            <td class="px-5 py-2 text-right font-semibold">{{ order.total|intcomma }}đ</td>
+            <td class="px-5 py-2">{{ order.get_status_display }}</td>
+            <td class="px-5 py-2 text-right text-gray-500">{{ order.created_at|date:"d/m/Y H:i" }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="px-5 py-6 text-center text-gray-400">Chưa có đơn hàng nào.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

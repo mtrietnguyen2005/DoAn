@@ -1,0 +1,60 @@
+{% load shop_extras %}
+<div id="product-results">
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+    <p class="text-sm text-slate-600">
+      Tìm thấy <strong class="text-slate-900">{{ paginator.count }}</strong> sản phẩm
+      {% if keyword %}cho từ khóa "<strong>{{ keyword }}</strong>"{% endif %}
+    </p>
+    <form hx-get="{% url 'catalog:product_list' %}" hx-target="#product-results" hx-swap="outerHTML"
+          hx-include="#filter-form" hx-push-url="true" class="flex items-center gap-2">
+      <label class="text-sm text-slate-600">Sắp xếp:</label>
+      <select name="sort" onchange="this.form.requestSubmit ? htmx.trigger(this.form,'submit') : null"
+              hx-get="{% url 'catalog:product_list' %}" hx-target="#product-results" hx-swap="outerHTML"
+              hx-include="#filter-form" hx-push-url="true"
+              class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 outline-none">
+        {% for key, option in sort_options.items %}
+          <option value="{{ key }}" {% if key == current_sort %}selected{% endif %}>{{ option.1 }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+
+  {% if products %}
+    <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {% for product in products %}
+        {% include "catalog/partials/product_card.html" %}
+      {% endfor %}
+    </div>
+
+    {% if page_obj.has_other_pages %}
+      <nav class="flex items-center justify-center gap-1 mt-10">
+        {% if page_obj.has_previous %}
+          <a href="?{% query_replace page=page_obj.previous_page_number %}"
+             hx-get="?{% query_replace page=page_obj.previous_page_number %}" hx-target="#product-results" hx-swap="outerHTML" hx-push-url="true"
+             class="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm hover:bg-slate-50">‹ Trước</a>
+        {% endif %}
+        {% for num in paginator.page_range %}
+          {% if num == page_obj.number %}
+            <span class="px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-semibold">{{ num }}</span>
+          {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+            <a href="?{% query_replace page=num %}"
+               hx-get="?{% query_replace page=num %}" hx-target="#product-results" hx-swap="outerHTML" hx-push-url="true"
+               class="px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm hover:bg-slate-50">{{ num }}</a>
+          {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+          <a href="?{% query_replace page=page_obj.next_page_number %}"
+             hx-get="?{% query_replace page=page_obj.next_page_number %}" hx-target="#product-results" hx-swap="outerHTML" hx-push-url="true"
+             class="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm hover:bg-slate-50">Sau ›</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="bg-white rounded-2xl border border-slate-200 py-20 text-center">
+      <div class="text-6xl mb-4">🔍</div>
+      <h3 class="font-semibold text-lg mb-1">Không tìm thấy sản phẩm nào</h3>
+      <p class="text-sm text-slate-500 mb-6">Hãy thử thay đổi từ khóa hoặc bỏ bớt bộ lọc.</p>
+      <a href="{% url 'catalog:product_list' %}" class="inline-block px-5 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700">Xem tất cả sản phẩm</a>
+    </div>
+  {% endif %}
+</div>

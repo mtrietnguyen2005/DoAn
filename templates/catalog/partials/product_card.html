@@ -1,0 +1,49 @@
+{% load shop_extras %}
+<article class="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg hover:border-brand-300 transition flex flex-col">
+  <a href="{{ product.get_absolute_url }}" class="block relative aspect-square bg-slate-100 overflow-hidden">
+    {% if product.thumbnail %}
+      <img src="{{ product.thumbnail.url }}" alt="{{ product.name }}" loading="lazy"
+           class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+    {% else %}
+      <div class="w-full h-full grid place-items-center text-5xl text-slate-300">🖥️</div>
+    {% endif %}
+    {% if product.has_discount %}
+      <span class="absolute top-2 left-2 px-2 py-1 rounded-lg bg-rose-500 text-white text-xs font-bold">-{{ product.discount_percent }}%</span>
+    {% endif %}
+    {% with stock=product.stock_total|default:product.stock_quantity %}
+      {% if not stock %}
+        <span class="absolute inset-0 bg-white/70 grid place-items-center">
+          <span class="px-3 py-1.5 rounded-lg bg-slate-800 text-white text-xs font-semibold">Hết hàng</span>
+        </span>
+      {% endif %}
+    {% endwith %}
+  </a>
+
+  <div class="p-4 flex flex-col flex-1">
+    <p class="text-[11px] uppercase tracking-wide text-brand-600 font-semibold mb-1">{{ product.brand.name }}</p>
+    <h3 class="font-medium text-sm leading-snug line-clamp-2 mb-2 min-h-[2.5rem]">
+      <a href="{{ product.get_absolute_url }}" class="hover:text-brand-700">{{ product.name }}</a>
+    </h3>
+
+    <div class="flex items-center gap-1.5 text-xs text-slate-500 mb-3">
+      {% with avg=product.rating_avg|default:product.rating_average %}
+        <span class="text-amber-400">{{ avg|stars }}</span>
+        <span>({{ product.reviews_total|default:product.rating_count }})</span>
+      {% endwith %}
+    </div>
+
+    <div class="mt-auto">
+      <div class="mb-3">
+        {% if product.has_discount %}
+          <div class="text-xs text-slate-400 line-through">{{ product.price|vnd }}</div>
+        {% endif %}
+        <div class="text-lg font-extrabold text-rose-600">{{ product.final_price|vnd }}</div>
+      </div>
+      <button type="button" data-add-to-cart="{{ product.pk }}"
+              class="w-full py-2.5 rounded-xl bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 active:scale-[.98] transition disabled:bg-slate-300 disabled:cursor-not-allowed"
+              {% with stock=product.stock_total|default:product.stock_quantity %}{% if not stock %}disabled{% endif %}{% endwith %}>
+        🛒 Thêm vào giỏ
+      </button>
+    </div>
+  </div>
+</article>

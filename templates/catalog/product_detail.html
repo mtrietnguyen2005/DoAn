@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% load shop_extras widget_tweaks %}
+{% block title %}{{ product.name }} · {{ SHOP_NAME }}{% endblock %}
+{% block meta_description %}{{ product.short_description|default:product.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+  <nav class="text-sm text-slate-500 mb-6 flex flex-wrap gap-1">
+    <a href="{% url 'core:home' %}" class="hover:text-brand-600">Trang chủ</a> ›
+    <a href="{% url 'catalog:product_list' %}" class="hover:text-brand-600">Sản phẩm</a> ›
+    <a href="{% url 'catalog:product_list' %}?category={{ product.category.slug }}" class="hover:text-brand-600">{{ product.category.name }}</a> ›
+    <span class="text-slate-800 font-medium truncate max-w-xs">{{ product.name }}</span>
+  </nav>
+
+  <div class="grid lg:grid-cols-2 gap-8 bg-white rounded-2xl border border-slate-200 p-6">
+    <!-- Ảnh -->
+    <div>
+      <div class="aspect-square rounded-xl bg-slate-100 overflow-hidden mb-3">
+        {% if product.thumbnail %}
+          <img id="main-image" src="{{ product.thumbnail.url }}" alt="{{ product.name }}" class="w-full h-full object-cover">
+        {% else %}
+          <div class="w-full h-full grid place-items-center text-7xl text-slate-300">🖥️</div>
+        {% endif %}
+      </div>
+      {% if product.images.exists %}
+        <div class="grid grid-cols-5 gap-2">
+          {% if product.thumbnail %}
+            <button onclick="document.getElementById('main-image').src='{{ product.thumbnail.url }}'"
+                    class="aspect-square rounded-lg overflow-hidden border-2 border-brand-500">
+              <img src="{{ product.thumbnail.url }}" alt="" class="w-full h-full object-cover">
+            </button>
+          {% endif %}
+          {% for image in product.images.all %}
+            <button onclick="document.getElementById('main-image').src='{{ image.image.url }}'"
+                    class="aspect-square rounded-lg overflow-hidden border-2 border-transparent hover:border-brand-400">
+              <img src="{{ image.image.url }}" alt="{{ image.alt_text }}" class="w-full h-full object-cover">
+            </button>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Thông tin -->
+    <div>
+      <a href="{% url 'catalog:product_list' %}?brand={{ product.brand.slug }}"
+         class="text-xs uppercase tracking-wide text-brand-600 font-bold hover:underline">{{ product.brand.name }}</a>
+      <h1 class="text-2xl font-extrabold mt-1 mb-3">{{ product.name }}</h1>
+
+      <div class="flex flex-wrap items-center gap-4 text-sm mb-5 pb-5 border-b border-slate-200">
+        <span class="flex items-center gap-1.5">
+          <span class="text-amber-400 text-base">{{ product.rating_average|stars }}</span>
+          <span class="text-slate-500">{{ product.rating_average }}/5 ({{ product.rating_count }} đánh giá)</span>
+        </span>
+        <span class="text-slate-300">|</span>
+        <span class="text-slate-500">SKU: <strong class="text-slate-700">{{ product.sku }}</strong></span>
+        <span class="text-slate-300">|</span>
+        <span class="text-slate-500">👁 {{ product.view_count }} lượt xem</span>
+      </div>
+
+      <div class="bg-slate-50 rounded-xl p-5 mb-5">
+        {% if product.has_discount %}
+          <div class="flex items-center gap-3 mb-1">
+            <span class="text-slate-400 line-through">{{ product.price|vnd }}</span>
+            <span class="px-2 py-0.5 rounded-lg bg-rose-500 text-white text-xs font-bold">Giảm {{ product.discount_percent }}%</span>
+          </div>
+        {% endif %}
+        <div class="text-3xl font-extrabold text-rose-600">{{ product.final_price|vnd }}</div>
+        {% if product.has_discount %}
+          <p class="text-sm text-emerald-600 mt-1">Tiết kiệm {{ product.price|subtract:product.sale_price|vnd }}</p>
+        {% endif %}
+      </div>
+
+      <dl class="grid grid-cols-2 gap-3 text-sm mb-5">
+        <div class="flex gap-2"><dt class="text-slate-500">Tình trạng:</dt>
+          <dd>{% if product.in_stock %}<strong class="text-emerald-600">Còn {{ product.stock_quantity }} sản phẩm</strong>{% else %}<strong class="text-rose-600">Hết hàng</strong>{% endif %}</dd></div>
+        <div class="flex gap-2"><dt class="text-slate-500">Bảo hành:</dt><dd><strong>{{ product.warranty_months }} tháng</strong></dd></div>
+        <div class="flex gap-2"><dt class="text-slate-500">Danh mục:</dt><dd><strong>{{ product.category.name }}</strong></dd></div>
+        {% if product.supplier %}
+          <div class="flex gap-2"><dt class="text-slate-500">Nhà cung cấp:</dt>
+            <dd><a href="{% url 'catalog:supplier_detail' product.supplier.slug %}" class="text-brand-600 hover:underline font-semibold">{{ product.supplier.name }}</a></dd></div>
+        {% endif %}
+      </dl>
+
+      {% if product.short_description %}
+        <p class="text-sm text-slate-600 leading-relaxed mb-5">{{ product.short_description }}</p>
+      {% endif %}
+
+      {% if product.in_stock %}
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="flex items-center border border-slate-300 rounded-xl overflow-hidden">
+            <button type="button" onclick="const i=document.getElementById('qty'); i.value=Math.max(1,parseInt(i.value)-1)"
+                    class="px-4 py-3 hover:bg-slate-100 font-bold">−</button>
+            <input id="qty" type="number" value="1" min="1" max="{{ product.stock_quantity }}"
+                   class="w-16 text-center py-3 outline-none font-semibold">
+            <button type="button" onclick="const i=document.getElementById('qty'); i.value=Math.min({{ product.stock_quantity }},parseInt(i.value)+1)"
+                    class="px-4 py-3 hover:bg-slate-100 font-bold">+</button>
+          </div>
+          <button type="button" data-add-to-cart="{{ product.pk }}" data-quantity-input="qty"
+                  class="flex-1 min-w-[200px] py-3 rounded-xl bg-brand-600 text-white font-bold hover:bg-brand-700 active:scale-[.99] transition">
+            🛒 Thêm vào giỏ hàng
+          </button>
+        </div>
+      {% else %}
+        <button disabled class="w-full py-3 rounded-xl bg-slate-200 text-slate-500 font-bold cursor-not-allowed">Sản phẩm tạm hết hàng</button>
+      {% endif %}
+
+      <div class="grid grid-cols-3 gap-2 mt-6 text-center text-xs text-slate-600">
+        <div class="p-3 rounded-xl bg-slate-50"><div class="text-xl mb-1">🚚</div>Miễn phí ship<br>đơn từ {{ FREE_SHIPPING_THRESHOLD|vnd }}</div>
+        <div class="p-3 rounded-xl bg-slate-50"><div class="text-xl mb-1">🛡️</div>Bảo hành<br>{{ product.warranty_months }} tháng</div>
+        <div class="p-3 rounded-xl bg-slate-50"><div class="text-xl mb-1">💵</div>Thanh toán<br>khi nhận hàng</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mô tả & thông số -->
+  <div class="grid lg:grid-cols-[1fr_360px] gap-6 mt-6">
+    <div class="bg-white rounded-2xl border border-slate-200 p-6">
+      <h2 class="text-lg font-bold mb-4">Mô tả sản phẩm</h2>
+      <div class="prose prose-sm max-w-none text-slate-700 leading-relaxed whitespace-pre-line">{{ product.description|default:"Chưa có mô tả chi tiết cho sản phẩm này." }}</div>
+    </div>
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 h-fit">
+      <h2 class="text-lg font-bold mb-4">Thông số kỹ thuật</h2>
+      {% if product.spec_lines %}
+        <table class="w-full text-sm">
+          {% for name, value in product.spec_lines %}
+            <tr class="border-b border-slate-100 last:border-0">
+              <td class="py-2 text-slate-500 pr-3 align-top w-2/5">{{ name }}</td>
+              <td class="py-2 font-medium">{{ value }}</td>
+            </tr>
+          {% endfor %}
+        </table>
+      {% else %}
+        <p class="text-sm text-slate-500">Chưa cập nhật thông số kỹ thuật.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Đánh giá -->
+  <section class="bg-white rounded-2xl border border-slate-200 p-6 mt-6">
+    <h2 class="text-lg font-bold mb-5">Đánh giá sản phẩm ({{ total_reviews }})</h2>
+
+    <div class="grid md:grid-cols-[220px_1fr] gap-8 mb-8 pb-8 border-b border-slate-200">
+      <div class="text-center">
+        <div class="text-5xl font-extrabold text-brand-600">{{ product.rating_average }}</div>
+        <div class="text-amber-400 text-xl my-1">{{ product.rating_average|stars }}</div>
+        <div class="text-sm text-slate-500">{{ total_reviews }} lượt đánh giá</div>
+      </div>
+      <div class="space-y-1.5">
+        {% for row in rating_breakdown %}
+          <div class="flex items-center gap-3 text-sm">
+            <span class="w-10 text-slate-600">{{ row.star }} ★</span>
+            <div class="flex-1 h-2.5 rounded-full bg-slate-100 overflow-hidden">
+              <div class="h-full bg-amber-400" style="width: {{ row.percent }}%"></div>
+            </div>
+            <span class="w-10 text-right text-slate-500">{{ row.count }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if user.is_authenticated %}
+      {% if my_review %}
+        <div class="bg-brand-50 border border-brand-200 rounded-xl p-5 mb-6">
+          <div class="flex items-start justify-between gap-4 mb-2">
+            <div>
+              <p class="font-semibold text-sm">Đánh giá của bạn</p>
+              <span class="text-amber-400">{{ my_review.rating|stars }}</span>
+            </div>
+            <div class="flex gap-2">
+              <a href="{% url 'catalog:review_update' my_review.pk %}" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-xs font-semibold hover:bg-slate-50">✏️ Sửa</a>
+              <form method="post" action="{% url 'catalog:review_delete' my_review.pk %}" onsubmit="return confirm('Bạn chắc chắn muốn xóa đánh giá này?')">
+                {% csrf_token %}
+                <button type="submit" class="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold hover:bg-rose-100">🗑 Xóa</button>
+              </form>
+            </div>
+          </div>
+          {% if my_review.title %}<p class="font-medium text-sm">{{ my_review.title }}</p>{% endif %}
+          <p class="text-sm text-slate-600 mt-1">{{ my_review.content }}</p>
+        </div>
+      {% else %}
+        <form method="post" action="{% url 'catalog:review_create' product.slug %}" class="bg-slate-50 rounded-xl p-5 mb-6 space-y-3">
+          {% csrf_token %}
+          <p class="font-semibold text-sm">Viết đánh giá của bạn</p>
+          {% for field in review_form %}
+            <div>
+              <label class="block text-sm text-slate-600 mb-1">{{ field.label }}</label>
+              {{ field }}
+              {% for error in field.errors %}<p class="text-xs text-rose-600 mt-1">{{ error }}</p>{% endfor %}
+            </div>
+          {% endfor %}
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700">Gửi đánh giá</button>
+        </form>
+      {% endif %}
+    {% else %}
+      <div class="bg-slate-50 rounded-xl p-5 mb-6 text-center text-sm">
+        <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="text-brand-600 font-semibold hover:underline">Đăng nhập</a>
+        để viết đánh giá cho sản phẩm này.
+      </div>
+    {% endif %}
+
+    <div class="space-y-4">
+      {% for review in reviews %}
+        {% if review != my_review %}
+          <div class="flex gap-4 pb-4 border-b border-slate-100 last:border-0">
+            <div class="w-10 h-10 rounded-full bg-brand-100 text-brand-700 grid place-items-center font-bold shrink-0">
+              {{ review.user.display_name|first|upper }}
+            </div>
+            <div class="flex-1">
+              <div class="flex flex-wrap items-center gap-2 mb-1">
+                <span class="font-semibold text-sm">{{ review.user.display_name }}</span>
+                <span class="text-amber-400 text-sm">{{ review.rating|stars }}</span>
+                <span class="text-xs text-slate-400">{{ review.created_at|date:"d/m/Y H:i" }}</span>
+              </div>
+              {% if review.title %}<p class="font-medium text-sm">{{ review.title }}</p>{% endif %}
+              <p class="text-sm text-slate-600 mt-1">{{ review.content }}</p>
+            </div>
+          </div>
+        {% endif %}
+      {% empty %}
+        <p class="text-center text-sm text-slate-500 py-6">Chưa có đánh giá nào. Hãy là người đầu tiên đánh giá sản phẩm!</p>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- Sản phẩm liên quan -->
+  {% if related_products %}
+    <section class="mt-10">
+      <h2 class="text-xl font-bold mb-5">Sản phẩm cùng danh mục</h2>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {% for product in related_products %}
+          {% include "catalog/partials/product_card.html" %}
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}
