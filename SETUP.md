@@ -356,6 +356,7 @@ gunicorn config.wsgi:application --bind 0.0.0.0:8000
 |---|---|
 | `Microsoft Visual C++ 14.0 or greater is required` / `Failed to build Pillow pyodbc` | Đang dùng Python 3.13/3.14 — các gói chưa có wheel dựng sẵn nên phải biên dịch. Cài Python 3.12 rồi tạo lại venv bằng `py -3.12 -m venv .venv` (xem Bước 1). |
 | `Could not open requirements file: 'requirements.txt'` | Đang đứng sai thư mục. Chạy `cd T:\DoAn` (hoặc đường dẫn dự án của bạn), kiểm tra bằng `dir requirements.txt` rồi cài lại. |
+| `ProgrammingError ... is invalid in the ORDER BY clause` (SQL Server, lỗi 8127) | Truy vấn gom nhóm còn sót ORDER BY mặc định của model. Đã sửa ở dashboard — chạy `git pull` để lấy bản mới. Khi tự viết truy vấn gom nhóm, luôn thêm `.order_by()` trước `.values().annotate()` hoặc `.aggregate()`. |
 | `ModuleNotFoundError: No module named 'django'` | Chưa kích hoạt môi trường ảo. Chạy lại lệnh activate ở Bước 2. |
 | `django.db.utils.InterfaceError: ('IM002'...)` | Chưa cài ODBC Driver, hoặc `DB_DRIVER` sai tên (mục 3.2). |
 | `Login failed for user 'sa'` | Sai mật khẩu, hoặc chưa bật SQL Server Authentication (mục 3.3). |

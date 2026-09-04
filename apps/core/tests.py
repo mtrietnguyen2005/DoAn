@@ -1,13 +1,19 @@
-"""Kiểm thử giỏ hàng và phân quyền chỉ đọc trong Admin."""
+"""Kiểm thử giỏ hàng, dashboard admin và phân quyền chỉ đọc trong Admin."""
+import re
+from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
-from django.test import TestCase
+from django.db import connection
+from django.test import RequestFactory, TestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.catalog.models import Brand, Category, Product, Review
 from apps.inventory.models import Batch
+from apps.orders.models import Order
 
 User = get_user_model()
 
@@ -115,3 +121,80 @@ class AdminReadOnlyPermissionTests(TestCase):
         self.assertEqual(response.status_code, 403)
         review.refresh_from_db()
         self.assertEqual(review.rating, 5)
+
+
+class DashboardQueryTests(TestCase):
+    """Bảo vệ trang Dashboard khỏi lỗi ORDER BY / GROUP BY của SQL Server.
+
+    SQL Server từ chối câu lệnh có ``ORDER BY`` trên cột không nằm trong ``GROUP BY``
+    (lỗi 8127), trong khi SQLite thì bỏ qua. Driver ``mssql-django`` lại giữ nguyên
+    ``ORDER BY`` mặc định của model khi câu lệnh có ``GROUP BY``, nên mọi truy vấn
+    gom nhóm đều phải gọi ``.order_by()`` để xoá ordering mặc định.
+    """
+
+    COLUMN_RE = re.compile(r'"(\w+)"\."(\w+)"')
+
+    def setUp(self):
+        self.request = RequestFactory().get("/admin/")
+        self.request.user = User.objects.create_superuser(
+            username="sep", email="sep@test.vn", password="matkhau123"
+        )
+        category = Category.objects.create(name="CPU")
+        brand = Brand.objects.create(name="Intel")
+        product = Product.objects.create(
+            name="Core i5", sku="CPU001", category=category, brand=brand, price=Decimal(5000000)
+        )
+        Batch.objects.create(
+            product=product, batch_code="B1", quantity_in=3, quantity_remaining=3,
+            cost_price=Decimal(4000000), expiry_date=timezone.localdate() + timedelta(days=5),
+        )
+
+    def _capture(self):
+        from apps.core.dashboard import dashboard_callback
+
+        with CaptureQueriesContext(connection) as ctx:
+            context = dashboard_callback(self.request, {})
+            # Ép lượng giá các queryset lười để chúng thực sự chạy
+            for key in ("expiring_batches", "low_stock_products", "recent_orders"):
+                list(context[key])
+        return context, ctx.captured_queries
+
+    def test_dashboard_runs_and_returns_expected_keys(self):
+        context, _ = self._capture()
+        for key in ("stat_cards", "revenue_month", "profit_month", "order_status_counts",
+                    "expiring_batches", "low_stock_products", "recent_orders"):
+            self.assertIn(key, context)
+        self.assertEqual(len(context["stat_cards"]), 4)
+
+    def test_no_order_by_column_outside_group_by(self):
+        """Mọi cột trong ORDER BY phải có mặt trong GROUP BY của cùng câu lệnh."""
+        _, queries = self._capture()
+        checked = 0
+        for entry in queries:
+            sql = entry["sql"]
+            upper = sql.upper()
+            start = upper.find("GROUP BY")
+            if start == -1:
+                continue
+            order_at = upper.rfind("ORDER BY")
+            if order_at <= start:
+                continue
+            checked += 1
+            group_clause = sql[start:order_at]
+            order_clause = sql[order_at:]
+            for table, column in self.COLUMN_RE.findall(order_clause):
+                self.assertIn(
+                    f'"{table}"."{column}"', group_clause,
+                    msg=(f'Cột "{table}"."{column}" nằm trong ORDER BY nhưng không có trong '
+                         f"GROUP BY — SQL Server sẽ báo lỗi 8127.\nSQL: {sql[:400]}"),
+                )
+        self.assertGreaterEqual(len(queries), 1)
+
+    def test_grouped_order_queryset_carries_no_default_ordering(self):
+        """Truy vấn gom nhóm trên Order phải sạch ordering dù model có Meta.ordering."""
+        from django.db.models import Count
+
+        self.assertEqual(Order._meta.ordering, ["-created_at"])
+        grouped = Order.objects.order_by().values("status").annotate(c=Count("id"))
+        self.assertEqual(grouped.query.order_by, ())
+        self.assertNotIn("ORDER BY", str(grouped.query).upper())

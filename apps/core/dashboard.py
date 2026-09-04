@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.db.models import Count, F, Sum
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from apps.accounts.models import User
@@ -16,13 +17,18 @@ def dashboard_callback(request, context):
     month_start = today.replace(day=1)
     warning_date = today + timedelta(days=settings.EXPIRY_WARNING_DAYS)
 
-    completed = Order.objects.filter(status=Order.Status.COMPLETED)
+    # Lưu ý: luôn gọi .order_by() trước khi gom nhóm/tổng hợp.
+    # SQL Server từ chối câu lệnh có ORDER BY trên cột không nằm trong GROUP BY,
+    # mà driver mssql-django lại giữ nguyên ORDER BY mặc định của model.
+    completed = Order.objects.filter(status=Order.Status.COMPLETED).order_by()
     revenue_month = completed.filter(created_at__date__gte=month_start).aggregate(s=Sum("total"))["s"] or 0
 
     cost_month = (
         OrderItem.objects.filter(
             order__status=Order.Status.COMPLETED, order__created_at__date__gte=month_start
-        ).aggregate(s=Sum(F("cost_price") * F("quantity")))["s"]
+        )
+        .order_by()
+        .aggregate(s=Sum(F("cost_price") * F("quantity")))["s"]
         or 0
     )
 
@@ -30,20 +36,20 @@ def dashboard_callback(request, context):
     expiring_batches = (
         Batch.objects.select_related("product")
         .filter(quantity_remaining__gt=0, expiry_date__isnull=False, expiry_date__lte=warning_date)
-        .order_by("expiry_date")[:10]
+        .order_by("expiry_date", "id")[:10]
     )
 
     # Sản phẩm sắp hết / đã hết tồn kho
     low_stock_products = (
         Product.objects.active()
-        .annotate(stock_total=Sum("batches__quantity_remaining"))
+        .annotate(stock_total=Coalesce(Sum("batches__quantity_remaining"), 0))
         .filter(stock_total__lte=settings.LOW_STOCK_THRESHOLD)
-        .order_by("stock_total")[:10]
+        .order_by("stock_total", "id")[:10]
     )
 
     status_counts = {
         row["status"]: row["c"]
-        for row in Order.objects.values("status").annotate(c=Count("id"))
+        for row in Order.objects.order_by().values("status").annotate(c=Count("id"))
     }
 
     context.update({
@@ -65,7 +71,7 @@ def dashboard_callback(request, context):
         ],
         "expiring_batches": expiring_batches,
         "low_stock_products": low_stock_products,
-        "recent_orders": Order.objects.select_related("user").order_by("-created_at")[:8],
+        "recent_orders": Order.objects.select_related("user").order_by("-created_at", "-id")[:8],
         "expiry_warning_days": settings.EXPIRY_WARNING_DAYS,
         "low_stock_threshold": settings.LOW_STOCK_THRESHOLD,
     })
