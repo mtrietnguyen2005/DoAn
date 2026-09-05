@@ -93,6 +93,28 @@ TEST_ON_MSSQL=True pytest
 
 ---
 
+## Tích hợp liên tục (CI)
+
+`.github/workflows/ci.yml` tự động chạy toàn bộ 359 test trên GitHub Actions ở
+mỗi lần push và mỗi pull request, tách thành hai job chạy song song:
+
+| Job | Chạy gì | Vì sao tách riêng |
+|---|---|---|
+| `unit-integration` | 314 ca không cần trình duyệt | Chạy trong vài giây, thất bại sớm phát hiện lỗi logic ngay |
+| `e2e` | 45 ca Playwright, tự cài Chromium bằng `playwright install --with-deps` | Chậm hơn (~1 phút), tách riêng để không làm job kia chờ |
+
+Cả hai job **không cần `.env`, không cần SQL Server** — `config/settings_test.py`
+mặc định SQLite nên chạy được trên máy chủ CI sạch, không cấu hình gì thêm.
+Kết quả (`junit-*.xml`) và ảnh chụp màn hình khi E2E thất bại được lưu làm
+artifact, xem trực tiếp trên tab **Actions** của repository.
+
+Đây là bằng chứng "sản phẩm chạy được trên máy khác" — một trong tám lỗi hay bị
+trừ điểm nhiều nhất là *"Demo lỗi tại buổi bảo vệ vì không thử lại trên máy
+khác"*. CI chạy lại toàn bộ test trên một máy hoàn toàn sạch ở mỗi lần đẩy code,
+nên nếu có lỗi môi trường sẽ lộ ra ngay, không phải đợi tới buổi bảo vệ.
+
+---
+
 ## Giai đoạn 1 — Unit Test
 
 ### Danh sách tệp

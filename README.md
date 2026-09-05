@@ -1,5 +1,7 @@
 # 🖥️ LinhKienPC — Website quản lý linh kiện điện tử PC & Laptop
 
+[![CI](https://github.com/mtrietnguyen2005/DoAn/actions/workflows/ci.yml/badge.svg)](https://github.com/mtrietnguyen2005/DoAn/actions/workflows/ci.yml)
+
 Đồ án website thương mại điện tử chuyên bán linh kiện máy tính (CPU, VGA, RAM, SSD, Mainboard, Laptop…)
 với hệ thống **quản lý tồn kho theo lô hàng**, truy vết giao dịch kho và tính lợi nhuận theo giá vốn thực tế.
 
