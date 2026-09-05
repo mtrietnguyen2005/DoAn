@@ -100,7 +100,7 @@ playwright install chromium   # chỉ cần cho E2E, chạy một lần
 
 pytest                        # 248 test Unit + Integration (~4 giây)
 pytest -m e2e                 # 45 test E2E bằng trình duyệt thật (~40 giây)
-pytest -m ""                  # tất cả 293 test
+pytest --tat-ca               # tất cả 347 test
 pytest --cov=apps             # kèm báo cáo độ bao phủ
 ```
 

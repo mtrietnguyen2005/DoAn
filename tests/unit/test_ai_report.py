@@ -131,6 +131,48 @@ class TestDocKetQua:
         assert redact.NHAN_CHE in toan_bo
 
 
+class TestGopNhieuTepKetQua:
+    """Chạy test làm nhiều lượt (tách E2E ra riêng) rồi gộp kết quả lại."""
+
+    @pytest.fixture
+    def hai_tep(self, tmp_path):
+        a = tmp_path / "a.json"
+        b = tmp_path / "b.json"
+        a.write_text(json.dumps({
+            "created": 100, "duration": 5.0,
+            "summary": {"total": 10, "passed": 9, "failed": 1},
+            "tests": [{"nodeid": "tests/unit/t.py::C::test_a", "outcome": "failed",
+                       "call": {"outcome": "failed", "longrepr": "E   ValueError: sai"}}],
+        }), encoding="utf-8")
+        b.write_text(json.dumps({
+            "created": 200, "duration": 30.0,
+            "summary": {"total": 5, "passed": 5},
+            "tests": [{"nodeid": "tests/e2e/t.py::C::test_b", "outcome": "passed"}],
+        }), encoding="utf-8")
+        return a, b
+
+    def test_cong_don_so_lieu(self, hai_tep):
+        gop = collect.doc_nhieu_bao_cao(hai_tep)
+        tt = collect.tom_tat(gop)
+        assert tt["tong"] == 15          # 10 + 5
+        assert tt["dat"] == 14           # 9 + 5
+        assert tt["hong"] == 1
+        assert tt["thoi_gian"] == 35.0   # 5 + 30
+
+    def test_gom_du_cac_ca_tu_moi_tep(self, hai_tep):
+        gop = collect.doc_nhieu_bao_cao(hai_tep)
+        assert len(gop["tests"]) == 2
+
+    def test_mot_tep_thi_tra_ve_nguyen_ven(self, hai_tep):
+        a, _ = hai_tep
+        assert collect.doc_nhieu_bao_cao([a]) == collect.doc_bao_cao(a)
+
+    def test_thieu_mot_tep_thi_bao_loi_ro_rang(self, hai_tep, tmp_path):
+        a, _ = hai_tep
+        with pytest.raises(FileNotFoundError):
+            collect.doc_nhieu_bao_cao([a, tmp_path / "khong-co.json"])
+
+
 class TestGomNhom:
     def test_gop_cac_loi_cung_ban_chat(self, bao_cao_mau):
         """assert 2 == 1 và assert 4 == 1 là cùng một bản chất lỗi."""

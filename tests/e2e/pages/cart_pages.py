@@ -78,6 +78,12 @@ class CartPage(BasePage):
         return row.locator("xpath=..").inner_text() if row.count() else ""
 
     def go_to_checkout(self):
+        """Sang trang thanh toán.
+
+        Khẳng định giỏ có hàng trước đã: nút này chỉ hiện khi giỏ khác rỗng, nên
+        nếu bấm thẳng mà giỏ rỗng thì lỗi báo ra rất khó hiểu.
+        """
+        expect(self.line_items.first).to_be_visible()
         self.page.click("a:has-text('Tiến hành đặt hàng')")
         return CheckoutPage(self.page, self.base_url)
 

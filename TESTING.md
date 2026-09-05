@@ -475,7 +475,7 @@ Giờ chỉ còn một lệnh duy nhất: `pytest`.
 
 Sinh lại khi thêm test mới:
 ```bash
-pytest -m "" --collect-only -q | grep "::" > nodes.txt
+pytest --tat-ca --collect-only -q | grep "::" > nodes.txt
 python scripts/trich_test_case.py && python scripts/sinh_excel_test_case.py
 ```
 
@@ -490,7 +490,7 @@ xây công cụ **đọc log lỗi và sinh báo cáo phân tích tự động**
 
 ```bash
 # 1. Chạy test, xuất kết quả ra JSON
-pytest -m "" --json-report --json-report-file=reports/ket-qua.json
+pytest --tat-ca --json-report --json-report-file=reports/ket-qua.json
 
 # 2. Phân tích và sinh báo cáo
 python -m tools.ai_report
@@ -583,7 +583,7 @@ mới có ý nghĩa.
 ```bash
 # Cố tình phá logic FIFO trong apps/inventory/services.py:
 #   .order_by(F("expiry_date").asc(...))  →  .desc(...)
-pytest -m "" --json-report --json-report-file=reports/ket-qua.json
+pytest --tat-ca --json-report --json-report-file=reports/ket-qua.json
 python -m tools.ai_report
 ```
 

@@ -1,4 +1,6 @@
 """Page Object cho danh sách và chi tiết sản phẩm."""
+import re
+
 from playwright.sync_api import expect
 
 from .base_page import BasePage
@@ -92,14 +94,14 @@ class ProductListPage(BasePage):
         """
         self.page.locator("#product-results button[data-add-to-cart]:not([disabled])") \
             .first.click()
-        expect(self.cart_badge).to_be_visible()
+        expect(self.cart_badge).to_have_text(re.compile(r"^[1-9]\d*$"))
         return self
 
     def add_product_to_cart(self, name: str):
         """Thêm đúng sản phẩm theo tên."""
         card = self.product_cards.filter(has_text=name).first
         card.locator("button[data-add-to-cart]").click()
-        expect(self.cart_badge).to_be_visible()
+        expect(self.cart_badge).to_have_text(re.compile(r"^[1-9]\d*$"))
         return self
 
     def expect_product_count(self, count: int):
@@ -141,8 +143,12 @@ class ProductDetailPage(BasePage):
         self.page.click("button[data-add-to-cart]")
         # Nút bấm gọi fetch() rồi cập nhật số trên biểu tượng giỏ hàng.
         # Không chờ "networkidle" (trang còn tải CSS/phông từ CDN) mà chờ đúng
-        # dấu hiệu cần: số trên giỏ hàng hiện ra.
-        expect(self.cart_badge).to_be_visible()
+        # dấu hiệu cần.
+        #
+        # Phải chờ badge có SỐ DƯƠNG, không chỉ chờ nó hiện ra: chờ hiện ra là
+        # tín hiệu quá yếu, có thể đi tiếp khi giỏ thực ra vẫn rỗng, rồi gãy ở
+        # bước sau với thông báo khó hiểu ("chờ mãi nút Tiến hành đặt hàng").
+        expect(self.cart_badge).to_have_text(re.compile(r"^[1-9]\d*$"))
         return self
 
     # ---- Đánh giá ----

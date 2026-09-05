@@ -226,7 +226,7 @@ Em ưu tiên bao phủ **logic nghiệp vụ** hơn là chạy đua con số: `o
 ```bash
 pytest                              # 248 ca Unit + Integration (~4 giây)
 pytest -m e2e                       # 45 ca E2E (~37 giây)
-pytest -m ""                        # tất cả 293 ca
+pytest --tat-ca                     # tất cả 347 ca
 pytest -m inventory                 # chỉ nhóm nghiệp vụ kho
 pytest --cov=apps --cov-report=html # báo cáo độ bao phủ
 

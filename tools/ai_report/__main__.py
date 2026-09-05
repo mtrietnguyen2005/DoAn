@@ -26,19 +26,22 @@ def main(argv: list[str] | None = None) -> int:
         prog="python -m tools.ai_report",
         description="Phân tích log lỗi kiểm thử bằng AI và xuất báo cáo.",
     )
-    bp.add_argument("--input", default="reports/ket-qua.json", help="tệp JSON kết quả pytest")
+    bp.add_argument("--input", nargs="+", default=["reports/ket-qua.json"],
+                    help="một hoặc nhiều tệp JSON kết quả pytest (nhiều tệp sẽ được gộp)")
     bp.add_argument("--out", default="reports", help="thư mục xuất báo cáo")
     bp.add_argument("--no-ai", action="store_true", help="không gọi API, chỉ gom nhóm")
     tham_so = bp.parse_args(argv)
 
     # 1. Đọc kết quả chạy test
     try:
-        bao_cao = collect.doc_bao_cao(tham_so.input)
+        bao_cao = collect.doc_nhieu_bao_cao(tham_so.input)
     except FileNotFoundError as loi:
         print(f"❌ {loi}", file=sys.stderr)
         return 2
 
     tom_tat = collect.tom_tat(bao_cao)
+    if len(tham_so.input) > 1:
+        print(f"🔗 Đã gộp {len(tham_so.input)} tệp kết quả")
     print(f"📊 {tom_tat['tong']} ca · {tom_tat['dat']} đạt · {tom_tat['hong']} thất bại "
           f"· {tom_tat['thoi_gian']}s")
 

@@ -106,6 +106,30 @@ def doc_bao_cao(duong_dan: str | Path) -> dict:
     return json.loads(duong_dan.read_text(encoding="utf-8"))
 
 
+def doc_nhieu_bao_cao(cac_duong_dan) -> dict:
+    """Gộp nhiều tệp kết quả thành một.
+
+    Dùng khi chạy test làm nhiều lượt, ví dụ tách E2E ra chạy riêng:
+
+        pytest --json-report --json-report-file=reports/a.json
+        pytest -m e2e --json-report --json-report-file=reports/b.json
+        python -m tools.ai_report --input reports/a.json reports/b.json
+    """
+    cac_bao_cao = [doc_bao_cao(d) for d in cac_duong_dan]
+    if len(cac_bao_cao) == 1:
+        return cac_bao_cao[0]
+
+    gop = {"tests": [], "summary": {}, "duration": 0.0,
+           "created": max(b.get("created", 0) for b in cac_bao_cao)}
+    for b in cac_bao_cao:
+        gop["tests"].extend(b.get("tests", []))
+        gop["duration"] += b.get("duration", 0.0)
+        for khoa, gia_tri in b.get("summary", {}).items():
+            if isinstance(gia_tri, (int, float)):
+                gop["summary"][khoa] = gop["summary"].get(khoa, 0) + gia_tri
+    return gop
+
+
 def trich_ca_loi(bao_cao: dict) -> list[CaLoi]:
     """Lấy ra các ca thất bại, đã lọc thông tin nhạy cảm."""
     ket_qua: list[CaLoi] = []
