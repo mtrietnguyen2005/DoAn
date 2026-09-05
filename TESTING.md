@@ -497,6 +497,15 @@ xây công cụ **đọc log lỗi và sinh báo cáo phân tích tự động**
 
 ### Cách chạy
 
+> **Trước tiên phải cài đủ thư viện.** Ba gói của giai đoạn 3
+> (`pytest-json-report`, `openai`, `anthropic`) được thêm vào
+> `requirements-dev.txt` sau giai đoạn 1-2, nên nếu bạn đã cài từ trước thì
+> phải cài lại, nếu không pytest sẽ báo `unrecognized arguments: --json-report`:
+>
+> ```bash
+> pip install -r requirements-dev.txt
+> ```
+
 ```bash
 # 1. Chạy test, xuất kết quả ra JSON
 pytest --tat-ca --json-report --json-report-file=reports/ket-qua.json
@@ -504,6 +513,18 @@ pytest --tat-ca --json-report --json-report-file=reports/ket-qua.json
 # 2. Phân tích và sinh báo cáo
 python -m tools.ai_report
 ```
+
+Nếu muốn chạy tách làm hai lượt (ví dụ để chạy phần E2E riêng cho dễ theo dõi),
+`tools.ai_report` gộp được nhiều tệp kết quả:
+
+```bash
+pytest --json-report --json-report-file=reports/a.json            # 306 ca không-E2E
+pytest -m e2e --json-report --json-report-file=reports/b.json     # 45 ca E2E
+python -m tools.ai_report --input reports/a.json reports/b.json
+```
+
+Lượt thứ hai dùng `-m e2e`, **không cần `--tat-ca`**: `-m` gõ trên dòng lệnh đã
+ghi đè bộ lọc mặc định trong `pytest.ini` rồi.
 
 Kết quả: `reports/bao-cao-loi.md` và `reports/bao-cao-loi.html`.
 
