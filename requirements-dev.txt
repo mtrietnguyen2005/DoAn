@@ -16,3 +16,7 @@ pytest-base-url==2.1.0
 
 # ===== Tiện ích =====
 pytest-xdist==3.6.1        # chạy test song song:  pytest -n auto
+
+# ===== Giai đoạn 3: AI phân tích log lỗi =====
+pytest-json-report==1.5.0   # xuất kết quả pytest ra JSON có cấu trúc
+anthropic==1.4.0            # SDK gọi Claude API

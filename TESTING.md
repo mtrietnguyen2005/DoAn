@@ -478,3 +478,94 @@ Sinh lại khi thêm test mới:
 pytest -m "" --collect-only -q | grep "::" > nodes.txt
 python scripts/trich_test_case.py && python scripts/sinh_excel_test_case.py
 ```
+
+---
+
+## Giai đoạn 3 — AI phân tích log lỗi tự động
+
+Thay cho phương án Postman ban đầu (đã huỷ vì dự án không có REST API), giai đoạn 3
+xây công cụ **đọc log lỗi và sinh báo cáo phân tích tự động**.
+
+### Cách chạy
+
+```bash
+# 1. Chạy test, xuất kết quả ra JSON
+pytest -m "" --json-report --json-report-file=reports/ket-qua.json
+
+# 2. Phân tích và sinh báo cáo
+python -m tools.ai_report
+```
+
+Kết quả: `reports/bao-cao-loi.md` và `reports/bao-cao-loi.html`.
+
+Để bật phần phân tích của AI, đặt khoá API trước khi chạy:
+
+```powershell
+$env:ANTHROPIC_API_KEY = "sk-ant-..."     # Windows
+export ANTHROPIC_API_KEY="sk-ant-..."     # macOS/Linux
+```
+
+Không có khoá thì công cụ **vẫn chạy bình thường**, chỉ thiếu phần nhận định của AI.
+
+| Tuỳ chọn | Ý nghĩa |
+|---|---|
+| `--input` | Tệp JSON kết quả (mặc định `reports/ket-qua.json`) |
+| `--out` | Thư mục xuất báo cáo (mặc định `reports/`) |
+| `--no-ai` | Chỉ gom nhóm, không gọi API |
+
+### Cấu trúc
+
+| Tệp | Nhiệm vụ |
+|---|---|
+| `tools/ai_report/redact.py` | **Lọc thông tin nhạy cảm** trước khi gửi ra ngoài |
+| `tools/ai_report/collect.py` | Đọc kết quả pytest, gom nhóm lỗi, đính kèm ảnh E2E |
+| `tools/ai_report/history.py` | So sánh với lần chạy trước |
+| `tools/ai_report/analyze.py` | Gọi Claude API, nhận kết quả có cấu trúc |
+| `tools/ai_report/render.py` | Xuất báo cáo Markdown và HTML |
+
+### Bốn quyết định thiết kế đáng nói khi bảo vệ
+
+**1. Lọc thông tin nhạy cảm — có rào chắn hai lớp.**
+Log kiểm thử có thể chứa mật khẩu SQL Server, khoá API, JWT, cookie phiên và đường dẫn
+lộ tên người dùng. `redact.py` che chúng ngay khi trích xuất; trước lúc gửi, `analyze.py`
+kiểm tra lại lần nữa và **dừng hẳn** nếu còn sót, thay vì cứ gửi đi.
+
+Email của dữ liệu test (`@test.vn`, `@example.com`) được **giữ nguyên** để báo cáo dễ đọc —
+chúng không phải thông tin thật.
+
+**2. AI đưa ra GIẢ THUYẾT, không phải kết luận.**
+Mỗi nhóm lỗi đều kèm trường **độ tin cậy** và **lỗi nằm ở đâu** (mã nguồn ứng dụng /
+bài test / môi trường). Báo cáo **luôn hiển thị traceback gốc** ngay bên cạnh, cùng dòng
+cảnh báo rằng phần phân tích có thể sai. Người đọc tự kiểm chứng được.
+
+**3. Dùng structured output thay vì đọc văn xuôi.**
+Kết quả trả về theo lược đồ Pydantic cố định nên phân tích được bằng code, không phải
+dò chuỗi. Tránh được rủi ro AI trả lời lệch định dạng.
+
+**4. Gom nhóm bằng "vân tay" chuẩn hoá.**
+Trước khi băm, các phần thay đổi giữa các lần chạy (địa chỉ bộ nhớ, dấu thời gian, mã đơn
+hàng, con số) được thay bằng ký hiệu chung. Nhờ đó `assert 2 == 1` và `assert 4 == 1` được
+nhận là **cùng một bản chất lỗi**, và vân tay ổn định qua các lần chạy nên so sánh lịch sử
+mới có ý nghĩa.
+
+### Kịch bản demo
+
+```bash
+# Cố tình phá logic FIFO trong apps/inventory/services.py:
+#   .order_by(F("expiry_date").asc(...))  →  .desc(...)
+pytest -m "" --json-report --json-report-file=reports/ket-qua.json
+python -m tools.ai_report
+```
+
+Kết quả thực tế đã chạy thử: **11 ca thất bại gom thành 8 nhóm**, báo cáo chỉ rõ
+*"8 lỗi MỚI xuất hiện — nhiều khả năng do thay đổi vừa rồi"*. Khôi phục code rồi chạy lại:
+*"−11 ca hỏng · 8 lỗi đã hết"*.
+
+### Công cụ này cũng được kiểm thử
+
+`tests/unit/test_ai_report.py` — **45 ca**, phủ phần tất định: lọc thông tin nhạy cảm,
+đọc kết quả, gom nhóm, so sánh lịch sử, xuất báo cáo và rào chắn bảo mật.
+
+Phần gọi API **không** kiểm thử tự động vì kết quả không tất định và tốn chi phí — nó được
+giả lập bằng `monkeypatch`. Đây cũng là một điểm đáng nêu khi bảo vệ: **biết cái gì nên
+kiểm thử tự động và cái gì không**.
