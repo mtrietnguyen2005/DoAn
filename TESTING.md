@@ -42,12 +42,20 @@ pytest -n auto                              # chạy song song cho nhanh
 
 ### Test chạy trên CSDL nào?
 
-Bộ test dùng cấu hình riêng `config/settings_test.py`, **mặc định chạy SQLite trong bộ nhớ**
-bất kể `.env` của bạn đặt `DB_ENGINE` là gì. Lý do:
+Bộ test dùng cấu hình riêng `config/settings_test.py`, **mặc định chạy SQLite ghi ra tệp
+`.pytest-db.sqlite3`** bất kể `.env` của bạn đặt `DB_ENGINE` là gì. Lý do:
 
-* Nhanh hơn nhiều lần (toàn bộ 152 test chạy trong ~2 giây)
+* Nhanh (306 test không-E2E chạy trong ~6 giây)
 * Không đụng tới database thật
 * Ai clone dự án về cũng chạy được ngay, không cần cài SQL Server
+
+**Vì sao là tệp chứ không phải `:memory:`?** Test E2E chạy qua `live_server` — một máy chủ
+WSGI đa luồng. Với SQLite trong bộ nhớ, Django buộc mọi luồng xử lý request dùng chung
+**một** connection duy nhất (`LiveServerThread.connections_override`). Hai request đồng thời
+— chuyện xảy ra thường xuyên ở trang admin, vừa tải HTML vừa gọi autocomplete — khoá nhau
+vĩnh viễn trên connection đó, và lần chạy `pytest --tat-ca` **đứng im chứ không báo lỗi**.
+Dùng CSDL dạng tệp thì mỗi luồng mở connection riêng, hết tranh chấp: 351 test chạy trọn
+trong ~60 giây. Cái giá phải trả chỉ là 0,3 giây chậm hơn ở phần không-E2E.
 
 ### ⚠️ Chạy test trên SQL Server trước khi nộp
 
@@ -92,7 +100,7 @@ TEST_ON_MSSQL=True pytest
 | Tệp | Nội dung | Số test |
 |---|---|---|
 | `pytest.ini` | Cấu hình pytest, khai báo marker | — |
-| `config/settings_test.py` | Cấu hình riêng khi test (mặc định SQLite trong bộ nhớ) | — |
+| `config/settings_test.py` | Cấu hình riêng khi test (mặc định SQLite ghi ra tệp) | — |
 | `requirements-dev.txt` | Thư viện phục vụ kiểm thử | — |
 | `tests/conftest.py` | **Toàn bộ fixtures dữ liệu mẫu** | — |
 | `tests/unit/test_models.py` | Logic trong tầng Model | 57 |
@@ -163,8 +171,9 @@ TEST_ON_MSSQL=True pytest
 
 `pytest-django` chạy mỗi test trong một transaction riêng và **rollback khi kết thúc**,
 nên các test hoàn toàn độc lập, không cần tự tay xoá dữ liệu. Cờ `--reuse-db` trong
-`pytest.ini` giữ lại database test giữa các lần chạy để khỏi phải migrate lại từ đầu.
-Khi đổi model, chạy `pytest --create-db` để tạo lại.
+`pytest.ini` giữ lại database test (`.pytest-db.sqlite3`) giữa các lần chạy để khỏi phải
+migrate lại từ đầu. **Khi đổi model, bắt buộc chạy `pytest --create-db`** để dựng lại lược
+đồ, nếu không test sẽ lỗi `no such column`.
 
 ### Nghiệp vụ đã bao phủ
 

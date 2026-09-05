@@ -48,7 +48,7 @@ nghiệp vụ quan trọng nhất.**
 | **Có template?** | Không | Có (render HTML) | Có |
 | **Có JavaScript?** | Không | **Không** | **Có** |
 | **Có CSRF?** | Không | **Mặc định tắt** | **Có** |
-| **Database** | SQLite bộ nhớ | SQLite bộ nhớ | SQLite bộ nhớ + server thật |
+| **Database** | SQLite tệp | SQLite tệp | SQLite tệp + server thật |
 | **Tốc độ 1 ca** | ~13ms | ~20ms | ~800ms |
 
 Hai dòng in đậm chính là **lý do phải có đủ ba tầng** — xem mục 4.
@@ -187,10 +187,19 @@ Vì tỉ lệ kim tự tháp: 248 ca ở tầng rẻ (~4 giây), chỉ 45 ca dù
 Nếu làm toàn bộ bằng E2E thì sẽ mất khoảng 4 phút — chậm gấp 6 lần.
 
 **❓ Vì sao test chạy SQLite mà website dùng SQL Server?**
-Test chạy SQLite bộ nhớ cho nhanh và không đụng dữ liệu thật. Nhưng em có
+Test chạy SQLite cho nhanh và không đụng dữ liệu thật. Nhưng em có
 `config/settings_test.py` với biến `TEST_ON_MSSQL=True` để chạy đúng bộ test đó
 trên SQL Server. **Em đã gặp lỗi thật chỉ lộ trên SQL Server** (lỗi `GROUP BY`),
 nên đây không phải lý thuyết suông.
+
+**❓ Vì sao CSDL test là một tệp chứ không phải SQLite trong bộ nhớ?**
+Ban đầu em dùng `:memory:` cho nhanh. Nhưng khi chạy chung cả bộ (`pytest --tat-ca`)
+thì lần chạy **treo cứng không báo lỗi**. Em dùng `py-spy` chụp ngăn xếp tiến trình
+đang treo và thấy hai luồng của web server cùng nằm trong `sqlite3.execute`. Nguyên
+nhân: với SQLite bộ nhớ, Django ép mọi luồng xử lý request của `live_server` dùng
+chung **một** connection (`LiveServerThread.connections_override`), nên hai request
+đồng thời khoá nhau vĩnh viễn. Chuyển sang CSDL dạng tệp thì mỗi luồng có connection
+riêng — 351 test chạy trọn trong ~60 giây, phần không-E2E chỉ chậm hơn 0,3 giây.
 
 **❓ Làm sao đảm bảo các test không ảnh hưởng nhau?**
 `pytest-django` chạy mỗi test trong một transaction riêng và rollback khi kết thúc.
