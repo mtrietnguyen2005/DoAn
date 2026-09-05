@@ -81,3 +81,47 @@ jobs:
           path: tests/e2e/screenshots/**
           retention-days: 14
           if-no-files-found: ignore
+
+  coverage:
+    name: Độ phủ code (coverage)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cài Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Cài thư viện
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Cài trình duyệt Chromium cho Playwright
+        run: python -m playwright install --with-deps chromium
+
+      - name: Chạy toàn bộ 359 test dưới coverage (--tat-ca gộp cả E2E)
+        run: python -m coverage run -m pytest -q --tat-ca
+
+      - name: In bảng độ phủ ra log
+        run: python -m coverage report
+
+      - name: Xuất báo cáo HTML + XML
+        run: |
+          python -m coverage html -d reports/coverage_html
+          python -m coverage xml -o reports/coverage.xml
+
+      - name: Lưu báo cáo coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            reports/coverage_html
+            reports/coverage.xml
+          retention-days: 14

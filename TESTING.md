@@ -115,6 +115,41 @@ nên nếu có lỗi môi trường sẽ lộ ra ngay, không phải đợi tớ
 
 ---
 
+## Độ phủ code (coverage)
+
+```bash
+# Chạy toàn bộ test (kể cả E2E) dưới coverage, cần Chromium như --tat-ca bình thường
+coverage run -m pytest -q --tat-ca
+
+# In bảng phần trăm theo từng file
+coverage report
+
+# Báo cáo HTML xem chi tiết dòng nào chưa được test tới
+coverage html -d reports/coverage_html
+```
+
+Kết quả đo được (359 test, `apps/` — loại `migrations/`, `tests/`,
+`manage.py` và `seed_data.py` vì đây là script chèn dữ liệu mẫu, không phải
+logic nghiệp vụ):
+
+**88,7%** (1.743 dòng lệnh + 248 nhánh rẽ, 159 dòng và 66 nhánh chưa chạm tới).
+
+Phần chưa phủ tập trung ở: `core/templatetags/shop_extras.py` (40%, các hàm
+định dạng hiển thị ít nhánh rẽ được test riêng), `accounts/backends.py`
+(65,4%, nhánh xử lý tài khoản bị khoá/vô hiệu hoá), `orders/cart.py` (75,5%,
+vài nhánh xử lý giỏ hàng lỗi hiếm gặp). Đây là số liệu nên đưa thẳng vào
+chương 4 hoặc 5 của báo cáo — hội đồng hay hỏi "test được bao nhiêu %".
+
+Chạy `coverage run -m pytest -q` (không `--tat-ca`) chỉ đo phần không-E2E sẽ
+cho số thấp hơn hẳn, vì nhiều view chỉ được test qua kịch bản trình duyệt
+đầy đủ ở Giai đoạn 2 — luôn đo coverage trên **toàn bộ** bộ test để không tự
+đánh giá thấp công sức của mình.
+
+CI (`.github/workflows/ci.yml`, job `coverage`) tự chạy lại phép đo này ở mỗi
+lần push và lưu báo cáo HTML làm artifact.
+
+---
+
 ## Giai đoạn 1 — Unit Test
 
 ### Danh sách tệp

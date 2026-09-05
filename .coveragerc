@@ -1,0 +1,17 @@
+[run]
+source = apps
+branch = True
+omit =
+    */migrations/*
+    */tests/*
+    manage.py
+    apps/core/management/commands/seed_data.py
+
+[report]
+precision = 1
+skip_covered = False
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    def __str__
+    raise NotImplementedError
