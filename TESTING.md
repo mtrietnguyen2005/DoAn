@@ -501,11 +501,39 @@ Kết quả: `reports/bao-cao-loi.md` và `reports/bao-cao-loi.html`.
 Để bật phần phân tích của AI, đặt khoá API trước khi chạy:
 
 ```powershell
-$env:ANTHROPIC_API_KEY = "sk-ant-..."     # Windows
-export ANTHROPIC_API_KEY="sk-ant-..."     # macOS/Linux
+# Windows PowerShell
+$env:DEEPSEEK_API_KEY = "sk-..."
+```
+
+```bash
+# macOS / Linux
+export DEEPSEEK_API_KEY="sk-..."
 ```
 
 Không có khoá thì công cụ **vẫn chạy bình thường**, chỉ thiếu phần nhận định của AI.
+
+> 🔐 **Không bao giờ ghi khoá API vào mã nguồn hay commit lên git.** Đặt qua biến
+> môi trường như trên, hoặc thêm dòng `DEEPSEEK_API_KEY=sk-...` vào tệp `.env`
+> (tệp này đã nằm trong `.gitignore`). Nếu lỡ để lộ khoá, hãy thu hồi và tạo khoá mới.
+
+### Hỗ trợ hai nhà cung cấp AI
+
+| Nhà cung cấp | Biến môi trường | Model mặc định | Đổi model bằng |
+|---|---|---|---|
+| **DeepSeek** *(mặc định)* | `DEEPSEEK_API_KEY` | `deepseek-chat` | `DEEPSEEK_MODEL` |
+| Claude | `ANTHROPIC_API_KEY` | `claude-opus-5` | `CLAUDE_MODEL` |
+
+Công cụ tự phát hiện theo khoá đang có. Có cả hai thì ưu tiên DeepSeek; muốn chỉ định
+rõ thì đặt `AI_PROVIDER=deepseek` hoặc `AI_PROVIDER=claude`.
+
+**Khác biệt kỹ thuật giữa hai bên** — đây là điểm đáng nêu khi bảo vệ:
+
+DeepSeek dùng giao thức tương thích OpenAI, có chế độ `response_format={"type":"json_object"}`
+bảo đảm trả về **JSON hợp lệ**, nhưng **không bảo đảm đúng lược đồ** — AI vẫn có thể
+thiếu trường hoặc điền giá trị ngoài danh sách cho phép. Vì vậy công cụ **kiểm tra lại
+bằng Pydantic** sau khi nhận, và báo lỗi rõ ràng nếu sai thay vì để dữ liệu hỏng lọt vào
+báo cáo. Claude thì ràng buộc lược đồ ngay ở phía máy chủ nên không cần bước này —
+nhưng công cụ vẫn kiểm tra cho cả hai, vì phòng thủ nhiều lớp là rẻ.
 
 | Tuỳ chọn | Ý nghĩa |
 |---|---|
@@ -520,7 +548,7 @@ Không có khoá thì công cụ **vẫn chạy bình thường**, chỉ thiếu
 | `tools/ai_report/redact.py` | **Lọc thông tin nhạy cảm** trước khi gửi ra ngoài |
 | `tools/ai_report/collect.py` | Đọc kết quả pytest, gom nhóm lỗi, đính kèm ảnh E2E |
 | `tools/ai_report/history.py` | So sánh với lần chạy trước |
-| `tools/ai_report/analyze.py` | Gọi Claude API, nhận kết quả có cấu trúc |
+| `tools/ai_report/analyze.py` | Gọi DeepSeek hoặc Claude, kiểm tra lược đồ phản hồi |
 | `tools/ai_report/render.py` | Xuất báo cáo Markdown và HTML |
 
 ### Bốn quyết định thiết kế đáng nói khi bảo vệ
@@ -538,9 +566,11 @@ Mỗi nhóm lỗi đều kèm trường **độ tin cậy** và **lỗi nằm �
 bài test / môi trường). Báo cáo **luôn hiển thị traceback gốc** ngay bên cạnh, cùng dòng
 cảnh báo rằng phần phân tích có thể sai. Người đọc tự kiểm chứng được.
 
-**3. Dùng structured output thay vì đọc văn xuôi.**
+**3. Dùng JSON có lược đồ thay vì đọc văn xuôi.**
 Kết quả trả về theo lược đồ Pydantic cố định nên phân tích được bằng code, không phải
-dò chuỗi. Tránh được rủi ro AI trả lời lệch định dạng.
+dò chuỗi. Với DeepSeek, JSON hợp lệ được bảo đảm nhưng lược đồ thì không, nên có thêm
+bước kiểm tra bằng Pydantic — nếu AI trả sai, công cụ báo lỗi rõ ràng thay vì để dữ
+liệu hỏng lọt vào báo cáo.
 
 **4. Gom nhóm bằng "vân tay" chuẩn hoá.**
 Trước khi băm, các phần thay đổi giữa các lần chạy (địa chỉ bộ nhớ, dấu thời gian, mã đơn
@@ -563,9 +593,13 @@ Kết quả thực tế đã chạy thử: **11 ca thất bại gom thành 8 nh�
 
 ### Công cụ này cũng được kiểm thử
 
-`tests/unit/test_ai_report.py` — **45 ca**, phủ phần tất định: lọc thông tin nhạy cảm,
-đọc kết quả, gom nhóm, so sánh lịch sử, xuất báo cáo và rào chắn bảo mật.
+`tests/unit/test_ai_report.py` — **54 ca**, phủ phần tất định: lọc thông tin nhạy cảm,
+đọc kết quả, gom nhóm, so sánh lịch sử, xuất báo cáo, chọn nhà cung cấp AI, xử lý phản
+hồi sai lược đồ và rào chắn bảo mật.
 
-Phần gọi API **không** kiểm thử tự động vì kết quả không tất định và tốn chi phí — nó được
-giả lập bằng `monkeypatch`. Đây cũng là một điểm đáng nêu khi bảo vệ: **biết cái gì nên
-kiểm thử tự động và cái gì không**.
+Phần **gọi API thật** không kiểm thử tự động vì kết quả không tất định và tốn chi phí.
+Thay vào đó, client được **giả lập bằng `monkeypatch`** để kiểm chứng toàn bộ đường xử lý
+phản hồi: JSON đúng lược đồ, JSON thiếu trường, và giá trị ngoài danh sách cho phép.
+
+Đây là một điểm đáng nêu khi bảo vệ: **biết cái gì nên kiểm thử tự động, cái gì không, và
+cách kiểm thử phần phụ thuộc dịch vụ bên ngoài mà không cần gọi dịch vụ đó**.

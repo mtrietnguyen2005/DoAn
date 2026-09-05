@@ -16,6 +16,8 @@ import argparse
 import sys
 from pathlib import Path
 
+from pydantic import ValidationError
+
 from . import analyze, collect, history, render
 
 
@@ -61,15 +63,20 @@ def main(argv: list[str] | None = None) -> int:
     ket_qua_ai = None
     if cac_nhom and not tham_so.no_ai:
         if not analyze.co_khoa_api():
-            print("⚠️  Chưa có ANTHROPIC_API_KEY — bỏ qua bước phân tích AI")
+            print("⚠️  Chưa cấu hình khoá API — bỏ qua bước phân tích AI.\n"
+                  "    Đặt DEEPSEEK_API_KEY (hoặc ANTHROPIC_API_KEY) rồi chạy lại.")
         else:
-            print(f"🧠 Đang nhờ {analyze.MODEL} phân tích {len(cac_nhom)} nhóm lỗi...")
+            print(f"🧠 Đang nhờ {analyze.nha_cung_cap()} ({analyze.ten_model()}) "
+                  f"phân tích {len(cac_nhom)} nhóm lỗi...")
             try:
                 ket_qua_ai = analyze.phan_tich(cac_nhom, tom_tat)
                 print("✅ Phân tích xong")
             except analyze.LoiBaoMat as loi:
                 print(f"🛑 {loi}", file=sys.stderr)
                 return 3
+            except ValidationError as loi:
+                print(f"⚠️  AI trả về dữ liệu sai lược đồ: {loi.error_count()} lỗi. "
+                      "Vẫn xuất báo cáo phần gom nhóm.", file=sys.stderr)
             except Exception as loi:                       # noqa: BLE001
                 print(f"⚠️  Gọi API thất bại ({type(loi).__name__}: {loi}). "
                       "Vẫn xuất báo cáo phần gom nhóm.", file=sys.stderr)

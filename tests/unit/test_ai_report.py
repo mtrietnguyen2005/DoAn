@@ -247,7 +247,7 @@ class TestXuatBaoCao:
 
     def test_bao_khi_chua_bat_ai(self, du_lieu):
         tt, nhom, xh = du_lieu
-        assert "ANTHROPIC_API_KEY" in render.dung_markdown(tt, nhom, None, xh)
+        assert "DEEPSEEK_API_KEY" in render.dung_markdown(tt, nhom, None, xh)
 
     def test_tat_ca_dat_thi_bao_cao_bao_thanh_cong(self, tmp_path):
         tt = {"tong": 293, "dat": 293, "hong": 0, "bo_qua": 0, "thoi_gian": 40.0, "thoi_diem": 0}
@@ -265,12 +265,152 @@ class TestXuatBaoCao:
 # ============================================================================
 # AN TOÀN KHI GỌI API
 # ============================================================================
+class TestChonNhaCungCap:
+    """Công cụ hỗ trợ cả DeepSeek lẫn Claude, chọn theo khoá API đang có."""
+
+    KHOA = ("DEEPSEEK_API_KEY", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "AI_PROVIDER")
+
+    @pytest.fixture(autouse=True)
+    def xoa_bien_moi_truong(self, monkeypatch):
+        for k in self.KHOA:
+            monkeypatch.delenv(k, raising=False)
+
+    def test_chua_co_khoa_nao(self):
+        from tools.ai_report import analyze
+        assert analyze.nha_cung_cap() is None
+        assert analyze.co_khoa_api() is False
+
+    def test_tu_nhan_deepseek(self, monkeypatch):
+        from tools.ai_report import analyze
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-gia-lap")
+        assert analyze.nha_cung_cap() == "deepseek"
+        assert analyze.co_khoa_api() is True
+
+    def test_tu_nhan_claude(self, monkeypatch):
+        from tools.ai_report import analyze
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-gia-lap")
+        assert analyze.nha_cung_cap() == "claude"
+
+    def test_co_ca_hai_thi_uu_tien_deepseek(self, monkeypatch):
+        from tools.ai_report import analyze
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-gia-lap")
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-gia-lap")
+        assert analyze.nha_cung_cap() == "deepseek"
+
+    def test_bien_AI_PROVIDER_thang_tat_ca(self, monkeypatch):
+        from tools.ai_report import analyze
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-gia-lap")
+        monkeypatch.setenv("AI_PROVIDER", "claude")
+        assert analyze.nha_cung_cap() == "claude"
+
+    def test_gia_tri_AI_PROVIDER_la_bi_bo_qua(self, monkeypatch):
+        """Đặt sai tên nhà cung cấp thì quay về tự phát hiện, không gãy."""
+        from tools.ai_report import analyze
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-gia-lap")
+        monkeypatch.setenv("AI_PROVIDER", "khong-ton-tai")
+        assert analyze.nha_cung_cap() == "deepseek"
+
+
+class TestXuLyPhanHoiDeepSeek:
+    """DeepSeek bảo đảm trả về JSON hợp lệ nhưng KHÔNG bảo đảm đúng lược đồ.
+
+    Vì vậy phải kiểm tra lại bằng Pydantic. Nhóm test này giả lập phản hồi để
+    kiểm chứng đường xử lý mà không cần gọi API thật.
+    """
+
+    @staticmethod
+    def _gia_lap(monkeypatch, noi_dung_tra_ve: str):
+        """Thay client OpenAI bằng đối tượng giả trả về chuỗi cho trước."""
+        import openai
+
+        class _TinNhan:
+            content = noi_dung_tra_ve
+
+        class _LuaChon:
+            message = _TinNhan()
+
+        class _PhanHoi:
+            choices = [_LuaChon()]
+
+        class _Completions:
+            @staticmethod
+            def create(**_):
+                return _PhanHoi()
+
+        class _Chat:
+            completions = _Completions()
+
+        class _Client:
+            def __init__(self, **_):
+                self.chat = _Chat()
+
+        monkeypatch.setattr(openai, "OpenAI", _Client)
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-gia-lap")
+        monkeypatch.delenv("AI_PROVIDER", raising=False)
+
+    @pytest.fixture
+    def nhom_sach(self):
+        return [{
+            "van_tay": "abc123", "loai_loi": "AssertionError", "thong_diep": "assert 2 == 1",
+            "so_luong": 2, "cac_tang": ["unit"],
+            "cac_ca": [{"ten": "test_fifo", "traceback": "assert 2 == 1"}],
+        }]
+
+    def test_phan_hoi_dung_luoc_do(self, monkeypatch, nhom_sach):
+        from tools.ai_report import analyze
+
+        hop_le = json.dumps({
+            "nhan_dinh_chung": "Lỗi tập trung ở nghiệp vụ xuất kho.",
+            "cac_nhom": [{
+                "van_tay": "abc123", "tieu_de": "Xuất kho sai thứ tự lô",
+                "nguyen_nhan": "Có thể thứ tự sắp xếp theo hạn dùng bị đảo.",
+                "muc_do": "cao", "do_tin_cay": "trung bình",
+                "loi_o_dau": "mã nguồn ứng dụng",
+                "huong_sua": "Kiểm tra order_by trong allocate_stock.",
+                "tep_can_xem": ["apps/inventory/services.py"],
+            }],
+        }, ensure_ascii=False)
+        self._gia_lap(monkeypatch, hop_le)
+
+        kq = analyze.phan_tich(nhom_sach, {"tong": 293})
+        assert kq.cac_nhom[0].van_tay == "abc123"
+        assert kq.cac_nhom[0].muc_do == "cao"
+
+    def test_phan_hoi_sai_luoc_do_bi_tu_choi(self, monkeypatch, nhom_sach):
+        """AI trả về JSON hợp lệ nhưng thiếu trường bắt buộc thì phải báo lỗi rõ ràng."""
+        from pydantic import ValidationError
+
+        from tools.ai_report import analyze
+
+        self._gia_lap(monkeypatch, '{"nhan_dinh_chung": "thiếu mất danh sách nhóm"}')
+        with pytest.raises(ValidationError):
+            analyze.phan_tich(nhom_sach, {"tong": 293})
+
+    def test_muc_do_ngoai_danh_sach_bi_tu_choi(self, monkeypatch, nhom_sach):
+        from pydantic import ValidationError
+
+        from tools.ai_report import analyze
+
+        sai = json.dumps({
+            "nhan_dinh_chung": "x",
+            "cac_nhom": [{
+                "van_tay": "abc123", "tieu_de": "y", "nguyen_nhan": "z",
+                "muc_do": "cực kỳ nghiêm trọng",          # không nằm trong danh sách cho phép
+                "do_tin_cay": "cao", "loi_o_dau": "bài test", "huong_sua": "w",
+            }],
+        }, ensure_ascii=False)
+        self._gia_lap(monkeypatch, sai)
+        with pytest.raises(ValidationError):
+            analyze.phan_tich(nhom_sach, {"tong": 293})
+
+
 class TestRaoChanBaoMat:
     def test_dung_lai_neu_con_sot_thong_tin_nhay_cam(self, monkeypatch):
         """Rào chắn cuối: phát hiện sót thì DỪNG, tuyệt đối không gửi đi."""
         from tools.ai_report import analyze
 
-        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-gia-lap-de-test")
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-gia-lap-de-test")
+        monkeypatch.delenv("AI_PROVIDER", raising=False)
         nhom_ban = [{
             "van_tay": "x", "loai_loi": "Loi", "thong_diep": "m", "so_luong": 1,
             "cac_tang": ["unit"],
@@ -282,8 +422,8 @@ class TestRaoChanBaoMat:
     def test_khong_co_khoa_api_thi_tra_ve_none(self, monkeypatch):
         from tools.ai_report import analyze
 
-        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-        monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
+        for k in ("DEEPSEEK_API_KEY", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "AI_PROVIDER"):
+            monkeypatch.delenv(k, raising=False)
         assert analyze.phan_tich([{"van_tay": "x"}], {}) is None
 
     def test_khong_co_loi_thi_khong_goi_api(self):

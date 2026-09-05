@@ -1,9 +1,17 @@
-"""Gửi log lỗi ĐÃ LỌC cho Claude và nhận về phân tích có cấu trúc.
+"""Gửi log lỗi ĐÃ LỌC cho AI và nhận về phân tích có cấu trúc.
+
+Hỗ trợ hai nhà cung cấp:
+
+* **DeepSeek** (mặc định) — dùng SDK ``openai`` trỏ tới ``api.deepseek.com``
+* **Claude** — dùng SDK ``anthropic``
+
+Chọn nhà cung cấp bằng biến môi trường ``AI_PROVIDER``, hoặc để trống thì tự
+phát hiện theo khoá API đang có.
 
 Hai nguyên tắc bắt buộc:
 
-1. **Chỉ gửi dữ liệu đã lọc.** Module này tự kiểm tra lần nữa trước khi gửi;
-   nếu phát hiện thông tin nhạy cảm còn sót thì dừng và báo lỗi.
+1. **Chỉ gửi dữ liệu đã lọc.** Module này kiểm tra lại lần nữa trước khi gửi;
+   phát hiện thông tin nhạy cảm còn sót thì DỪNG, không gửi.
 2. **Kết quả AI là GỢI Ý, không phải kết luận.** Báo cáo luôn hiển thị
    traceback gốc bên cạnh để người đọc tự kiểm chứng.
 """
@@ -13,11 +21,14 @@ import json
 import os
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from .redact import kiem_tra_con_sot
 
-MODEL = "claude-opus-5"
+#: Cấu hình mặc định cho từng nhà cung cấp
+DIA_CHI_DEEPSEEK = "https://api.deepseek.com"
+MODEL_DEEPSEEK = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
+MODEL_CLAUDE = os.environ.get("CLAUDE_MODEL", "claude-opus-5")
 
 HUONG_DAN = """Bạn là chuyên gia kiểm thử phần mềm, đang phân tích log lỗi của một
 bộ kiểm thử tự động viết bằng pytest cho ứng dụng Django (website bán linh kiện máy tính).
@@ -31,14 +42,15 @@ Nghiệp vụ cốt lõi gồm: quản lý tồn kho theo lô hàng, xuất kho 
 sớm nhất, lưu giá vốn COGS bình quân gia quyền tại thời điểm bán, và hoàn trả hàng về
 đúng lô ban đầu khi hủy đơn.
 
-Với mỗi NHÓM lỗi được cung cấp, hãy phân tích và trả về JSON theo đúng lược đồ.
+Với mỗi NHÓM lỗi được cung cấp, hãy phân tích và trả về kết quả dạng json.
 
 Yêu cầu bắt buộc:
 - Viết bằng tiếng Việt, ngắn gọn, đi thẳng vào vấn đề.
 - Trường `nguyen_nhan` là GIẢ THUYẾT dựa trên traceback, không được khẳng định chắc chắn.
 - Trường `do_tin_cay` phản ánh trung thực mức độ chắc chắn của bạn.
 - Nếu traceback không đủ dữ kiện, hãy nói rõ là không đủ thay vì suy đoán bừa.
-- Phân biệt rõ: lỗi trong MÃ NGUỒN ứng dụng hay lỗi trong CHÍNH BÀI TEST."""
+- Phân biệt rõ: lỗi trong MÃ NGUỒN ứng dụng hay lỗi trong CHÍNH BÀI TEST.
+- Trường `van_tay` phải chép NGUYÊN VĂN từ dữ liệu đầu vào, không được tự đặt."""
 
 
 class PhanTichNhom(BaseModel):
@@ -64,10 +76,41 @@ class LoiBaoMat(Exception):
     """Phát hiện thông tin nhạy cảm còn sót — dừng, không gửi đi."""
 
 
+# ============================================================================
+# CHỌN NHÀ CUNG CẤP
+# ============================================================================
+def nha_cung_cap() -> str | None:
+    """Trả về 'deepseek', 'claude' hoặc None nếu chưa cấu hình khoá nào.
+
+    Ưu tiên biến ``AI_PROVIDER`` nếu người dùng chỉ định rõ.
+    """
+    chon = os.environ.get("AI_PROVIDER", "").strip().lower()
+    if chon in ("deepseek", "claude"):
+        return chon
+    if os.environ.get("DEEPSEEK_API_KEY"):
+        return "deepseek"
+    if os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"):
+        return "claude"
+    return None
+
+
+def ten_model() -> str:
+    return {"deepseek": MODEL_DEEPSEEK, "claude": MODEL_CLAUDE}.get(nha_cung_cap(), "—")
+
+
 def co_khoa_api() -> bool:
-    return bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"))
+    """Đã cấu hình đủ để gọi API chưa."""
+    ncc = nha_cung_cap()
+    if ncc == "deepseek":
+        return bool(os.environ.get("DEEPSEEK_API_KEY"))
+    if ncc == "claude":
+        return bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"))
+    return False
 
 
+# ============================================================================
+# CHUẨN BỊ DỮ LIỆU GỬI ĐI
+# ============================================================================
 def _dung_du_lieu_gui(cac_nhom: list[dict], tom_tat: dict) -> str:
     goi = {"tom_tat_lan_chay": tom_tat, "cac_nhom_loi": []}
     for n in cac_nhom:
@@ -83,20 +126,8 @@ def _dung_du_lieu_gui(cac_nhom: list[dict], tom_tat: dict) -> str:
     return json.dumps(goi, ensure_ascii=False, indent=2)
 
 
-def phan_tich(cac_nhom: list[dict], tom_tat: dict) -> KetQuaPhanTich | None:
-    """Gọi Claude phân tích các nhóm lỗi.
-
-    Trả về None nếu không có khoá API — khi đó báo cáo vẫn được sinh ra
-    nhưng không có phần phân tích của AI.
-    """
-    if not cac_nhom:
-        return None
-    if not co_khoa_api():
-        return None
-
-    noi_dung = _dung_du_lieu_gui(cac_nhom, tom_tat)
-
-    # Rào chắn cuối cùng: tuyệt đối không gửi đi nếu còn thông tin nhạy cảm
+def _kiem_tra_an_toan(noi_dung: str) -> None:
+    """Rào chắn cuối cùng trước khi dữ liệu rời khỏi máy."""
     con_sot = kiem_tra_con_sot(noi_dung)
     if con_sot:
         raise LoiBaoMat(
@@ -104,11 +135,52 @@ def phan_tich(cac_nhom: list[dict], tom_tat: dict) -> KetQuaPhanTich | None:
             + ", ".join(con_sot)
         )
 
+
+# ============================================================================
+# GỌI API
+# ============================================================================
+def _goi_deepseek(noi_dung: str) -> KetQuaPhanTich:
+    """Gọi DeepSeek qua SDK openai (DeepSeek dùng giao thức tương thích OpenAI).
+
+    DeepSeek có chế độ JSON (``response_format``) bảo đảm trả về JSON hợp lệ,
+    nhưng KHÔNG bảo đảm đúng lược đồ. Vì vậy phải kiểm tra lại bằng Pydantic.
+    """
+    from openai import OpenAI
+
+    client = OpenAI(
+        api_key=os.environ["DEEPSEEK_API_KEY"],
+        base_url=DIA_CHI_DEEPSEEK,
+    )
+    luoc_do = json.dumps(KetQuaPhanTich.model_json_schema(), ensure_ascii=False, indent=2)
+
+    phan_hoi = client.chat.completions.create(
+        model=MODEL_DEEPSEEK,
+        response_format={"type": "json_object"},
+        max_tokens=8000,
+        messages=[
+            {"role": "system", "content": HUONG_DAN},
+            {
+                "role": "user",
+                "content": (
+                    "Đây là kết quả chạy test có lỗi. Hãy phân tích từng nhóm và trả về "
+                    "MỘT đối tượng json duy nhất đúng theo lược đồ sau:\n\n"
+                    f"```json\n{luoc_do}\n```\n\n"
+                    f"Dữ liệu cần phân tích:\n\n{noi_dung}"
+                ),
+            },
+        ],
+    )
+    van_ban = phan_hoi.choices[0].message.content or "{}"
+    return KetQuaPhanTich.model_validate_json(van_ban)
+
+
+def _goi_claude(noi_dung: str) -> KetQuaPhanTich:
+    """Gọi Claude. SDK bảo đảm luôn đúng lược đồ nhờ structured output."""
     import anthropic
 
     client = anthropic.Anthropic()
     phan_hoi = client.messages.parse(
-        model=MODEL,
+        model=MODEL_CLAUDE,
         max_tokens=16000,
         system=HUONG_DAN,
         thinking={"type": "adaptive"},
@@ -119,3 +191,26 @@ def phan_tich(cac_nhom: list[dict], tom_tat: dict) -> KetQuaPhanTich | None:
         output_format=KetQuaPhanTich,
     )
     return phan_hoi.parsed_output
+
+
+def phan_tich(cac_nhom: list[dict], tom_tat: dict) -> KetQuaPhanTich | None:
+    """Nhờ AI phân tích các nhóm lỗi.
+
+    Trả về ``None`` khi không có lỗi nào, hoặc chưa cấu hình khoá API — khi đó
+    báo cáo vẫn được sinh ra, chỉ thiếu phần nhận định của AI.
+
+    Ném ``LoiBaoMat`` nếu phát hiện thông tin nhạy cảm còn sót.
+    Ném ``ValidationError`` nếu AI trả về dữ liệu sai lược đồ.
+    """
+    if not cac_nhom or not co_khoa_api():
+        return None
+
+    noi_dung = _dung_du_lieu_gui(cac_nhom, tom_tat)
+    _kiem_tra_an_toan(noi_dung)
+
+    ncc = nha_cung_cap()
+    if ncc == "deepseek":
+        return _goi_deepseek(noi_dung)
+    if ncc == "claude":
+        return _goi_claude(noi_dung)
+    return None

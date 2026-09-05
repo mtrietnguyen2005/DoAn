@@ -72,7 +72,7 @@ def dung_markdown(tom_tat, cac_nhom, ket_qua_ai, xu_huong) -> str:
         d.append(f"> {ket_qua_ai.nhan_dinh_chung}")
         d.append("")
     else:
-        d.append("> ⚠️ **Chưa bật phân tích AI.** Đặt biến môi trường `ANTHROPIC_API_KEY`")
+        d.append("> ⚠️ **Chưa bật phân tích AI.** Đặt biến môi trường `DEEPSEEK_API_KEY`")
         d.append("> để có thêm phần phân tích nguyên nhân. Báo cáo dưới đây vẫn đầy đủ")
         d.append("> thông tin gom nhóm và traceback gốc.")
         d.append("")
@@ -180,7 +180,7 @@ img{{max-width:100%;border-radius:8px;border:1px solid #e2e8f0;margin-top:8px}}
                  f'<p>{e(ket_qua_ai.nhan_dinh_chung)}</p></div>')
     elif cac_nhom:
         h.append('<div class="canh-bao">⚠️ <b>Chưa bật phân tích AI.</b> Đặt biến môi trường '
-                 '<code>ANTHROPIC_API_KEY</code> để có thêm phần phân tích nguyên nhân.</div>')
+                 '<code>DEEPSEEK_API_KEY</code> để có thêm phần phân tích nguyên nhân.</div>')
 
     for i, nhom in enumerate(cac_nhom, 1):
         p = ai.get(nhom["van_tay"])
