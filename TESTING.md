@@ -523,28 +523,25 @@ Giờ chỉ còn một lệnh duy nhất: `pytest`.
 | Tài liệu | Nội dung |
 |---|---|
 | [docs/BAO-VE-DO-AN.md](docs/BAO-VE-DO-AN.md) | Kim tự tháp kiểm thử, nghiệp vụ được kiểm thử, 11 lỗi phát hiện được, câu hỏi phản biện |
-| [docs/DANH-MUC-TEST-CASE.md](docs/DANH-MUC-TEST-CASE.md) | Bảng chi tiết toàn bộ 313 ca (sinh tự động bằng `scripts/sinh_md_test_case.py`) |
+| [docs/DANH-MUC-TEST-CASE.md](docs/DANH-MUC-TEST-CASE.md) | Bảng chi tiết toàn bộ 313 ca |
 | [docs/CHIEN-LUOC-BAT-ELEMENT.md](docs/CHIEN-LUOC-BAT-ELEMENT.md) | Cách định vị phần tử, 3 bẫy đã gặp thật, auto-waiting, Page Object Model |
 
-> Danh mục test case được sinh bằng script phân tích cú pháp (AST) kết hợp
-> `pytest --collect-only`, nên **luôn khớp với mã nguồn thực tế**.
+> Danh mục test case là ảnh chụp thủ công tại thời điểm viết (tên, mô tả lấy
+> từ mã nguồn qua `pytest --collect-only` lúc sinh ra), **không tự cập nhật**.
+> Script sinh tự động đã được gỡ khỏi repo vì không còn dùng tới; nếu thêm/bớt
+> test sau này, sửa tay `docs/DANH-MUC-TEST-CASE.md` và `.xlsx` hoặc viết lại
+> script tương tự (đọc `tests/**/test_*.py` bằng `ast`, đối chiếu số ca thật
+> bằng `pytest --collect-only -q --tat-ca`).
 
 ### File Excel danh mục test case
 
-`docs/DANH-MUC-TEST-CASE.xlsx` — 3 sheet:
+`docs/DANH-MUC-TEST-CASE.xlsx` — 3 sheet, cùng nội dung với bản trên:
 
 | Sheet | Nội dung |
 |---|---|
 | **Danh muc Test Case** | 268 dòng: tên test + ý nghĩa, dữ liệu chuẩn bị, các bước thực thi, kết quả mong đợi. Có lọc và cố định dòng tiêu đề |
 | **Tong hop** | Thống kê theo tầng và theo tệp |
 | **Chu giai Fixture** | Giải nghĩa toàn bộ dữ liệu mẫu |
-
-Sinh lại khi thêm test mới (không cần bước thủ công nào, hai script tự chạy
-`pytest --collect-only`):
-```bash
-python scripts/trich_test_case.py && python scripts/sinh_excel_test_case.py
-python scripts/sinh_md_test_case.py   # sinh docs/DANH-MUC-TEST-CASE.md
-```
 
 ---
 

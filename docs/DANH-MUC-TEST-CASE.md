@@ -1,8 +1,9 @@
 # 📋 Danh mục toàn bộ Test Case
 
-> Tài liệu **sinh tự động** từ mã nguồn bằng `scripts/sinh_md_test_case.py`: tên và
-> mô tả lấy bằng phân tích cú pháp (AST), số ca lấy từ `pytest --collect-only`.
-> Luôn khớp với code thực tế — sửa test rồi chạy lại script, không sửa tay tệp này.
+> Ảnh chụp thủ công tại thời điểm viết: tên và mô tả lấy bằng phân tích cú
+> pháp (AST) từ mã nguồn, số ca đối chiếu bằng `pytest --collect-only`. Script
+> sinh tự động đã được gỡ khỏi repo; nếu test thay đổi sau này, tệp này **không
+> tự cập nhật** — cần sửa tay hoặc viết lại script tương tự.
 
 **Tổng cộng: 313 ca kiểm thử** (190 Unit + 86 Integration + 37 E2E)
 
