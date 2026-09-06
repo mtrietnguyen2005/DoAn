@@ -9,9 +9,9 @@
 
 | Chỉ số | Giá trị |
 |---|---|
-| Tổng số ca kiểm thử | **293** |
-| Thời gian chạy toàn bộ | ~41 giây |
-| Độ bao phủ logic nghiệp vụ | **95%** (`orders/services.py` đạt 100%) |
+| Tổng số ca kiểm thử | **313** |
+| Thời gian chạy toàn bộ | ~65 giây |
+| Độ bao phủ mã nguồn `apps/` | **88,2%** (`orders/services.py` đạt 97,4%) |
 | Số lỗi thật phát hiện được | **11** |
 | Công cụ | pytest, pytest-django, Playwright |
 
@@ -19,14 +19,14 @@
 
 ```
               ▲
-             ╱ ╲     E2E — 45 ca (15%)
-            ╱───╲    Chậm nhất (~37s), đắt nhất, gần người dùng nhất
+             ╱ ╲     E2E — 37 ca (12%)
+            ╱───╲    Chậm nhất (~52s), đắt nhất, gần người dùng nhất
            ╱     ╲
-          ╱───────╲  Integration — 96 ca (33%)
+          ╱───────╲  Integration — 86 ca (27%)
          ╱         ╲ Trung bình (~2s), qua HTTP thật
         ╱───────────╲
-       ╱             ╲ Unit — 152 ca (52%)
-      ╱───────────────╲ Nhanh nhất (~2s), rẻ nhất, nhiều nhất
+       ╱             ╲ Unit — 190 ca (61%)
+      ╱───────────────╲ Nhanh nhất (~4s), rẻ nhất, nhiều nhất
 ```
 
 **Vì sao chia tỉ lệ như vậy?** Càng lên cao test càng chậm, càng dễ gãy vặt và
@@ -182,8 +182,8 @@ def test_ngay_duoi_nguong_van_phai_tra_phi(...)  # sát biên dưới
 
 ## 6. Câu hỏi phản biện thường gặp
 
-**❓ Vì sao 293 test mà chỉ mất 41 giây?**
-Vì tỉ lệ kim tự tháp: 248 ca ở tầng rẻ (~4 giây), chỉ 45 ca dùng trình duyệt.
+**❓ Vì sao 313 test mà chỉ mất 65 giây?**
+Vì tỉ lệ kim tự tháp: 276 ca ở tầng rẻ (~6 giây), chỉ 37 ca dùng trình duyệt.
 Nếu làm toàn bộ bằng E2E thì sẽ mất khoảng 4 phút — chậm gấp 6 lần.
 
 **❓ Vì sao test chạy SQLite mà website dùng SQL Server?**
@@ -199,7 +199,7 @@ thì lần chạy **treo cứng không báo lỗi**. Em dùng `py-spy` chụp ng
 nhân: với SQLite bộ nhớ, Django ép mọi luồng xử lý request của `live_server` dùng
 chung **một** connection (`LiveServerThread.connections_override`), nên hai request
 đồng thời khoá nhau vĩnh viễn. Chuyển sang CSDL dạng tệp thì mỗi luồng có connection
-riêng — 351 test chạy trọn trong ~60 giây, phần không-E2E chỉ chậm hơn 0,3 giây.
+riêng — 313 test chạy trọn trong ~65 giây, phần không-E2E chỉ chậm hơn 0,3 giây.
 
 **❓ Làm sao đảm bảo các test không ảnh hưởng nhau?**
 `pytest-django` chạy mỗi test trong một transaction riêng và rollback khi kết thúc.
@@ -223,19 +223,21 @@ Test pass lúc chạy riêng chỉ vì select2 còn hiển thị danh sách mặ
 **Đã sửa bằng cách tìm theo mã SKU** và thêm khẳng định kiểm tra giá trị đã thực
 sự được gán.
 
-**❓ Độ bao phủ 95% — 5% còn lại là gì?**
-Chủ yếu là các nhánh xử lý lỗi hiếm gặp và một số phương thức `__str__`.
-Em ưu tiên bao phủ **logic nghiệp vụ** hơn là chạy đua con số: `orders/services.py`
-— nơi chứa toàn bộ nghiệp vụ kho và đơn hàng — đạt **100%**.
+**❓ Độ bao phủ 88,2% — phần còn lại là gì?**
+Thấp nhất là các template tag hiển thị (`core/templatetags/shop_extras.py`, 40%)
+và một số nhánh xử lý tài khoản bị khoá (`accounts/backends.py`, 65,4%) — đều là
+nhánh phụ, ít va chạm trong luồng chính. Em ưu tiên bao phủ **logic nghiệp vụ**
+hơn chạy đua con số: `orders/services.py` — nơi chứa toàn bộ nghiệp vụ kho và
+đơn hàng — đạt **97,4%**.
 
 ---
 
 ## 7. Lệnh chạy để demo
 
 ```bash
-pytest                              # 248 ca Unit + Integration (~4 giây)
-pytest -m e2e                       # 45 ca E2E (~37 giây)
-pytest --tat-ca                     # tất cả 347 ca
+pytest                              # 276 ca Unit + Integration (~6 giây)
+pytest -m e2e                       # 37 ca E2E (~52 giây)
+pytest --tat-ca                     # tất cả 313 ca
 pytest -m inventory                 # chỉ nhóm nghiệp vụ kho
 pytest --cov=apps --cov-report=html # báo cáo độ bao phủ
 

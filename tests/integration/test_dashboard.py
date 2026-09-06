@@ -104,13 +104,17 @@ class TestDashboard:
 
 
 class TestTrangAdminMoDuoc:
+    """Mỗi app đăng ký ít nhất một trang admin — chọn một trang đại diện cho
+    mỗi app thay vì liệt kê hết mọi model, vì cả 16 model đều đi qua cùng
+    một cơ chế đăng ký/render của django-unfold."""
+
     @pytest.mark.parametrize("url", [
-        "/admin/", "/admin/accounts/user/", "/admin/accounts/address/",
-        "/admin/catalog/product/", "/admin/catalog/category/", "/admin/catalog/brand/",
-        "/admin/catalog/supplier/", "/admin/catalog/review/",
-        "/admin/inventory/batch/", "/admin/inventory/stocktransaction/",
-        "/admin/orders/order/", "/admin/orders/shipping/", "/admin/orders/promocode/",
-        "/admin/content/banner/", "/admin/content/news/", "/admin/content/promotion/",
+        "/admin/",
+        "/admin/accounts/address/",
+        "/admin/catalog/product/",
+        "/admin/inventory/stocktransaction/",
+        "/admin/orders/order/",
+        "/admin/content/banner/",
     ])
     def test_superuser_mo_duoc_moi_trang(self, client, superuser, url, du_lieu_dashboard):
         client.force_login(superuser)

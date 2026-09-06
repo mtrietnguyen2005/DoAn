@@ -4,10 +4,10 @@ Bộ kiểm thử được chia làm 3 giai đoạn. **Giai đoạn 1 đã hoàn
 
 | Giai đoạn | Công nghệ | Trạng thái |
 |---|---|---|
-| 1. Unit Test | `pytest` + `pytest-django` | ✅ Hoàn thành — 152 test |
-| 1b. Integration | `pytest-django` (qua HTTP) | ✅ Hoàn thành — 96 test |
-| 2. E2E Test | `pytest-playwright` (Page Object Model) | ✅ Hoàn thành — 45 test |
-| 3. API Test | Postman Collection + `newman` | ⚠️ Cần quyết định (xem mục *Vướng mắc*) |
+| 1. Unit Test | `pytest` + `pytest-django` | ✅ Hoàn thành — 190 test |
+| 1b. Integration | `pytest-django` (qua HTTP) | ✅ Hoàn thành — 86 test |
+| 2. E2E Test | `pytest-playwright` (Page Object Model) | ✅ Hoàn thành — 37 test |
+| 3. AI phân tích log lỗi | DeepSeek/Claude API + Pydantic | ✅ Hoàn thành (thay cho phương án Postman ban đầu, xem mục *Giai đoạn 3*) |
 
 ---
 
@@ -45,7 +45,7 @@ pytest -n auto                              # chạy song song cho nhanh
 Bộ test dùng cấu hình riêng `config/settings_test.py`, **mặc định chạy SQLite ghi ra tệp
 `.pytest-db.sqlite3`** bất kể `.env` của bạn đặt `DB_ENGINE` là gì. Lý do:
 
-* Nhanh (306 test không-E2E chạy trong ~6 giây)
+* Nhanh (276 test không-E2E chạy trong ~6 giây)
 * Không đụng tới database thật
 * Ai clone dự án về cũng chạy được ngay, không cần cài SQL Server
 
@@ -54,8 +54,8 @@ WSGI đa luồng. Với SQLite trong bộ nhớ, Django buộc mọi luồng x�
 **một** connection duy nhất (`LiveServerThread.connections_override`). Hai request đồng thời
 — chuyện xảy ra thường xuyên ở trang admin, vừa tải HTML vừa gọi autocomplete — khoá nhau
 vĩnh viễn trên connection đó, và lần chạy `pytest --tat-ca` **đứng im chứ không báo lỗi**.
-Dùng CSDL dạng tệp thì mỗi luồng mở connection riêng, hết tranh chấp: 351 test chạy trọn
-trong ~60 giây. Cái giá phải trả chỉ là 0,3 giây chậm hơn ở phần không-E2E.
+Dùng CSDL dạng tệp thì mỗi luồng mở connection riêng, hết tranh chấp: 313 test chạy trọn
+trong ~65 giây. Cái giá phải trả chỉ là 0,3 giây chậm hơn ở phần không-E2E.
 
 ### ⚠️ Chạy test trên SQL Server trước khi nộp
 
@@ -95,13 +95,13 @@ TEST_ON_MSSQL=True pytest
 
 ## Tích hợp liên tục (CI)
 
-`.github/workflows/ci.yml` tự động chạy toàn bộ 359 test trên GitHub Actions ở
+`.github/workflows/ci.yml` tự động chạy toàn bộ 313 test trên GitHub Actions ở
 mỗi lần push và mỗi pull request, tách thành hai job chạy song song:
 
 | Job | Chạy gì | Vì sao tách riêng |
 |---|---|---|
-| `unit-integration` | 314 ca không cần trình duyệt | Chạy trong vài giây, thất bại sớm phát hiện lỗi logic ngay |
-| `e2e` | 45 ca Playwright, tự cài Chromium bằng `playwright install --with-deps` | Chậm hơn (~1 phút), tách riêng để không làm job kia chờ |
+| `unit-integration` | 276 ca không cần trình duyệt | Chạy trong vài giây, thất bại sớm phát hiện lỗi logic ngay |
+| `e2e` | 37 ca Playwright, tự cài Chromium bằng `playwright install --with-deps` | Chậm hơn (~1 phút), tách riêng để không làm job kia chờ |
 
 Cả hai job **không cần `.env`, không cần SQL Server** — `config/settings_test.py`
 mặc định SQLite nên chạy được trên máy chủ CI sạch, không cấu hình gì thêm.
@@ -128,11 +128,11 @@ coverage report
 coverage html -d reports/coverage_html
 ```
 
-Kết quả đo được (359 test, `apps/` — loại `migrations/`, `tests/`,
+Kết quả đo được (313 test, `apps/` — loại `migrations/`, `tests/`,
 `manage.py` và `seed_data.py` vì đây là script chèn dữ liệu mẫu, không phải
 logic nghiệp vụ):
 
-**88,7%** (1.743 dòng lệnh + 248 nhánh rẽ, 159 dòng và 66 nhánh chưa chạm tới).
+**88,2%** (1.743 dòng lệnh + 248 nhánh rẽ, 166 dòng và 66 nhánh chưa chạm tới).
 
 Phần chưa phủ tập trung ở: `core/templatetags/shop_extras.py` (40%, các hàm
 định dạng hiển thị ít nhánh rẽ được test riêng), `accounts/backends.py`
@@ -262,11 +262,11 @@ migrate lại từ đầu. **Khi đổi model, bắt buộc chạy `pytest --cre
 ### Tổng số test
 
 ```
-Unit          152    (tests/unit/)
-Integration    96    (tests/integration/)
-E2E            45    (tests/e2e/)
+Unit          190    (tests/unit/)
+Integration    86    (tests/integration/)
+E2E            37    (tests/e2e/)
              -----
-TỔNG          293
+TỔNG          313
 ```
 
 ### Độ bao phủ logic nghiệp vụ cốt lõi
@@ -523,7 +523,7 @@ Giờ chỉ còn một lệnh duy nhất: `pytest`.
 | Tài liệu | Nội dung |
 |---|---|
 | [docs/BAO-VE-DO-AN.md](docs/BAO-VE-DO-AN.md) | Kim tự tháp kiểm thử, nghiệp vụ được kiểm thử, 11 lỗi phát hiện được, câu hỏi phản biện |
-| [docs/DANH-MUC-TEST-CASE.md](docs/DANH-MUC-TEST-CASE.md) | Bảng chi tiết toàn bộ 293 ca (sinh tự động từ mã nguồn) |
+| [docs/DANH-MUC-TEST-CASE.md](docs/DANH-MUC-TEST-CASE.md) | Bảng chi tiết toàn bộ 313 ca (sinh tự động bằng `scripts/sinh_md_test_case.py`) |
 | [docs/CHIEN-LUOC-BAT-ELEMENT.md](docs/CHIEN-LUOC-BAT-ELEMENT.md) | Cách định vị phần tử, 3 bẫy đã gặp thật, auto-waiting, Page Object Model |
 
 > Danh mục test case được sinh bằng script phân tích cú pháp (AST) kết hợp
@@ -535,14 +535,15 @@ Giờ chỉ còn một lệnh duy nhất: `pytest`.
 
 | Sheet | Nội dung |
 |---|---|
-| **Danh muc Test Case** | 232 dòng: tên test + ý nghĩa, dữ liệu chuẩn bị, các bước thực thi, kết quả mong đợi. Có lọc và cố định dòng tiêu đề |
+| **Danh muc Test Case** | 268 dòng: tên test + ý nghĩa, dữ liệu chuẩn bị, các bước thực thi, kết quả mong đợi. Có lọc và cố định dòng tiêu đề |
 | **Tong hop** | Thống kê theo tầng và theo tệp |
 | **Chu giai Fixture** | Giải nghĩa toàn bộ dữ liệu mẫu |
 
-Sinh lại khi thêm test mới:
+Sinh lại khi thêm test mới (không cần bước thủ công nào, hai script tự chạy
+`pytest --collect-only`):
 ```bash
-pytest --tat-ca --collect-only -q | grep "::" > nodes.txt
 python scripts/trich_test_case.py && python scripts/sinh_excel_test_case.py
+python scripts/sinh_md_test_case.py   # sinh docs/DANH-MUC-TEST-CASE.md
 ```
 
 ---
@@ -575,8 +576,8 @@ Nếu muốn chạy tách làm hai lượt (ví dụ để chạy phần E2E ri�
 `tools.ai_report` gộp được nhiều tệp kết quả:
 
 ```bash
-pytest --json-report --json-report-file=reports/a.json            # 306 ca không-E2E
-pytest -m e2e --json-report --json-report-file=reports/b.json     # 45 ca E2E
+pytest --json-report --json-report-file=reports/a.json            # 276 ca không-E2E
+pytest -m e2e --json-report --json-report-file=reports/b.json     # 37 ca E2E
 python -m tools.ai_report --input reports/a.json reports/b.json
 ```
 

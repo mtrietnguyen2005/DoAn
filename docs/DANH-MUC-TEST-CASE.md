@@ -1,29 +1,139 @@
 # 📋 Danh mục toàn bộ Test Case
 
-> Tài liệu **sinh tự động** từ mã nguồn: tên và mô tả lấy bằng phân tích cú pháp (AST),
-> số ca lấy từ `pytest --collect-only`. Luôn khớp với code thực tế.
+> Tài liệu **sinh tự động** từ mã nguồn bằng `scripts/sinh_md_test_case.py`: tên và
+> mô tả lấy bằng phân tích cú pháp (AST), số ca lấy từ `pytest --collect-only`.
+> Luôn khớp với code thực tế — sửa test rồi chạy lại script, không sửa tay tệp này.
 
-**Tổng cộng: 293 ca kiểm thử** (152 Unit + 96 Integration + 45 E2E)
+**Tổng cộng: 313 ca kiểm thử** (190 Unit + 86 Integration + 37 E2E)
 
-| Giai đoạn | Số ca | Thời gian chạy |
-|---|---|---|
-| Unit | 152 | ~2 giây |
-| Integration | 96 | ~2 giây |
-| E2E (Playwright) | 45 | ~37 giây |
-| **Tổng** | **293** | **~41 giây** |
+| Giai đoạn | Số ca |
+|---|---|
+| Unit | 190 |
+| Integration | 86 |
+| E2E (Playwright) | 37 |
+| **Tổng** | **313** |
 
 
 ---
 
-## GIAI ĐOẠN 1 — UNIT TEST — 152 ca
+## GIAI ĐOẠN 1 — UNIT TEST — 190 ca
 
-*Kiểm thử đơn vị: logic thuần trong model và service, không qua HTTP, không trình duyệt.*
+### 📄 `test_ai_report.py` — 55 ca
+
+> Kiểm thử công cụ phân tích log lỗi bằng AI. Chỉ kiểm thử phần TẤT ĐỊNH (lọc thông tin nhạy cảm, gom nhóm, so sánh lịch sử, xuất báo cáo). Phần gọi API không kiểm thử ở đây vì kết quả không tất định và tốn chi phí — nó được giả lập bằng đối tượng thay thế.
+
+#### 🔹 `TestLocThongTinNhayCam` — 14 ca
+
+**Mục đích:** Không được để lọt mật khẩu, khoá API hay đường dẫn cá nhân ra ngoài.
+
+| # | Test case | Kiểm chứng điều gì |
+|:--:|---|---|
+| 1 | `test_che_duoc_thong_tin_nhay_cam` 🔁<br>Che duoc thong tin nhay cam | Che duoc thong tin nhay cam |
+| 2 | `test_giu_nguyen_email_dung_trong_test`<br>Giu nguyen email dung trong test | Email của dữ liệu test không phải thông tin thật, giữ lại cho dễ đọc. |
+| 3 | `test_khong_con_sot_sau_khi_loc`<br>Khong con sot sau khi loc | Khong con sot sau khi loc |
+| 4 | `test_loc_hai_lan_cho_ket_qua_giong_nhau`<br>Loc hai lan cho ket qua giong nhau | Lọc lại chuỗi đã lọc không được làm hỏng thêm. |
+| 5 | `test_loc_duoc_cau_truc_long_nhau`<br>Loc duoc cau truc long nhau | Loc duoc cau truc long nhau |
+| 6 | `test_chuoi_rong_khong_gay_loi`<br>Chuoi rong khong gay loi | Chuoi rong khong gay loi |
+
+
+#### 🔹 `TestDocKetQua` — 6 ca
+
+| # | Test case | Kiểm chứng điều gì |
+|:--:|---|---|
+| 1 | `test_bao_loi_khi_thieu_tep`<br>Bao loi khi thieu tep | Bao loi khi thieu tep |
+| 2 | `test_tom_tat_dung_so_lieu`<br>Tom tat dung so lieu | Tom tat dung so lieu |
+| 3 | `test_chi_trich_cac_ca_that_bai`<br>Chi trich cac ca that bai | Chi trich cac ca that bai |
+| 4 | `test_nhan_dien_dung_tang`<br>Nhan dien dung tang | Nhan dien dung tang |
+| 5 | `test_bo_tien_to_E_cua_pytest`<br>Bo tien to e cua pytest | Bo tien to e cua pytest |
+| 6 | `test_traceback_da_duoc_loc`<br>Traceback da duoc loc | Đây là điểm mấu chốt: traceback tuyệt đối không được mang mật khẩu. |
+
+
+#### 🔹 `TestGopNhieuTepKetQua` — 4 ca
+
+**Mục đích:** Chạy test làm nhiều lượt (tách E2E ra riêng) rồi gộp kết quả lại.
+
+| # | Test case | Kiểm chứng điều gì |
+|:--:|---|---|
+| 1 | `test_cong_don_so_lieu`<br>Cong don so lieu | Cong don so lieu |
+| 2 | `test_gom_du_cac_ca_tu_moi_tep`<br>Gom du cac ca tu moi tep | Gom du cac ca tu moi tep |
+| 3 | `test_mot_tep_thi_tra_ve_nguyen_ven`<br>Mot tep thi tra ve nguyen ven | Mot tep thi tra ve nguyen ven |
+| 4 | `test_thieu_mot_tep_thi_bao_loi_ro_rang`<br>Thieu mot tep thi bao loi ro rang | Thieu mot tep thi bao loi ro rang |
+
+
+#### 🔹 `TestGomNhom` — 5 ca
+
+| # | Test case | Kiểm chứng điều gì |
+|:--:|---|---|
+| 1 | `test_gop_cac_loi_cung_ban_chat`<br>Gop cac loi cung ban chat | assert 2 == 1 và assert 4 == 1 là cùng một bản chất lỗi. |
+| 2 | `test_khong_gop_loi_khac_ban_chat`<br>Khong gop loi khac ban chat | Khong gop loi khac ban chat |
+| 3 | `test_chuan_hoa_bo_phan_thay_doi`<br>Chuan hoa bo phan thay doi | Chuan hoa bo phan thay doi |
+| 4 | `test_van_tay_on_dinh`<br>Van tay on dinh | Chạy lại cùng dữ liệu phải cho cùng vân tay, để so sánh lịch sử có nghĩa. |
+| 5 | `test_khong_co_loi_thi_khong_co_nhom`<br>Khong co loi thi khong co nhom | Khong co loi thi khong co nhom |
+
+
+#### 🔹 `TestLichSu` — 7 ca
+
+| # | Test case | Kiểm chứng điều gì |
+|:--:|---|---|
+| 1 | `test_lan_dau_chay_chua_co_lich_su`<br>Lan dau chay chua co lich su | Lan dau chay chua co lich su |
+| 2 | `test_ghi_va_doc_lai`<br>Ghi va doc lai | Ghi va doc lai |
+| 3 | `test_thoi_diem_luu_dang_doc_duoc`<br>Thoi diem luu dang doc duoc | Dấu thời gian phải là ISO đọc được, không phải số epoch của pytest. |
+| 4 | `test_nhan_dien_loi_moi_va_loi_da_sua`<br>Nhan dien loi moi va loi da sua | Nhan dien loi moi va loi da sua |
+| 5 | `test_khong_co_lan_truoc_thi_moi_loi_deu_la_moi`<br>Khong co lan truoc thi moi loi deu la moi | Khong co lan truoc thi moi loi deu la moi |
+| 6 | `test_chi_giu_so_lan_gioi_han`<br>Chi giu so lan gioi han | Chi giu so lan gioi han |
+| 7 | `test_tep_lich_su_hong_khong_lam_gay_quy_trinh`<br>Tep lich su hong khong lam gay quy trinh | Tep lich su hong khong lam gay quy trinh |
+
+
+#### 🔹 `TestXuatBaoCao` — 7 ca
+
+| # | Test case | Kiểm chứng điều gì |
+|:--:|---|---|
+| 1 | `test_xuat_du_hai_dinh_dang`<br>Xuat du hai dinh dang | Xuat du hai dinh dang |
+| 2 | `test_bao_cao_khong_lo_thong_tin_nhay_cam`<br>Bao cao khong lo thong tin nhay cam | Bao cao khong lo thong tin nhay cam |
+| 3 | `test_luon_kem_traceback_goc`<br>Luon kem traceback goc | Người đọc phải tự kiểm chứng được, không chỉ tin lời AI. |
+| 4 | `test_canh_bao_ai_co_the_sai`<br>Canh bao ai co the sai | Canh bao ai co the sai |
+| 5 | `test_bao_khi_chua_bat_ai`<br>Bao khi chua bat ai | Bao khi chua bat ai |
+| 6 | `test_tat_ca_dat_thi_bao_cao_bao_thanh_cong`<br>Tat ca dat thi bao cao bao thanh cong | Tat ca dat thi bao cao bao thanh cong |
+| 7 | `test_html_hop_le`<br>Html hop le | Html hop le |
+
+
+#### 🔹 `TestChonNhaCungCap` — 6 ca
+
+**Mục đích:** Công cụ hỗ trợ cả DeepSeek lẫn Claude, chọn theo khoá API đang có.
+
+| # | Test case | Kiểm chứng điều gì |
+|:--:|---|---|
+| 1 | `test_chua_co_khoa_nao`<br>Chua co khoa nao | Chua co khoa nao |
+| 2 | `test_tu_nhan_deepseek`<br>Tu nhan deepseek | Tu nhan deepseek |
+| 3 | `test_tu_nhan_claude`<br>Tu nhan claude | Tu nhan claude |
+| 4 | `test_co_ca_hai_thi_uu_tien_deepseek`<br>Co ca hai thi uu tien deepseek | Co ca hai thi uu tien deepseek |
+| 5 | `test_bien_AI_PROVIDER_thang_tat_ca`<br>Bien ai provider thang tat ca | Bien ai provider thang tat ca |
+| 6 | `test_gia_tri_AI_PROVIDER_la_bi_bo_qua`<br>Gia tri ai provider la bi bo qua | Đặt sai tên nhà cung cấp thì quay về tự phát hiện, không gãy. |
+
+
+#### 🔹 `TestXuLyPhanHoiDeepSeek` — 3 ca
+
+**Mục đích:** DeepSeek bảo đảm trả về JSON hợp lệ nhưng KHÔNG bảo đảm đúng lược đồ. Vì vậy phải kiểm tra lại bằng Pydantic. Nhóm test này giả lập phản hồi để kiểm chứng đường xử lý mà không cần gọi API thật.
+
+| # | Test case | Kiểm chứng điều gì |
+|:--:|---|---|
+| 1 | `test_phan_hoi_dung_luoc_do`<br>Phan hoi dung luoc do | Phan hoi dung luoc do |
+| 2 | `test_phan_hoi_sai_luoc_do_bi_tu_choi`<br>Phan hoi sai luoc do bi tu choi | AI trả về JSON hợp lệ nhưng thiếu trường bắt buộc thì phải báo lỗi rõ ràng. |
+| 3 | `test_muc_do_ngoai_danh_sach_bi_tu_choi`<br>Muc do ngoai danh sach bi tu choi | Muc do ngoai danh sach bi tu choi |
+
+
+#### 🔹 `TestRaoChanBaoMat` — 3 ca
+
+| # | Test case | Kiểm chứng điều gì |
+|:--:|---|---|
+| 1 | `test_dung_lai_neu_con_sot_thong_tin_nhay_cam`<br>Dung lai neu con sot thong tin nhay cam | Rào chắn cuối: phát hiện sót thì DỪNG, tuyệt đối không gửi đi. |
+| 2 | `test_khong_co_khoa_api_thi_tra_ve_none`<br>Khong co khoa api thi tra ve none | Khong co khoa api thi tra ve none |
+| 3 | `test_khong_co_loi_thi_khong_goi_api`<br>Khong co loi thi khong goi api | Khong co loi thi khong goi api |
 
 
 ### 📄 `test_models.py` — 57 ca
 
 > GIAI ĐOẠN 1 — Unit Test tầng Model. Kiểm thử các thuộc tính tính toán và ràng buộc nghiệp vụ nằm ngay trong ``models.py``: tồn kho theo lô, giá bán, giá vốn, mã giảm giá, đơn hàng, địa chỉ và tài khoản người dùng.
-
 
 #### 🔹 `TestProductStock` — 5 ca
 
@@ -104,7 +214,7 @@
 
 | # | Test case | Kiểm chứng điều gì |
 |:--:|---|---|
-| 1 | `test_quyen_huy_don_theo_tung_trang_thai`<br>Quyen huy don theo tung trang thai 🔁 | Quyen huy don theo tung trang thai |
+| 1 | `test_quyen_huy_don_theo_tung_trang_thai` 🔁<br>Quyen huy don theo tung trang thai | Quyen huy don theo tung trang thai |
 
 
 #### 🔹 `TestUserModel` — 7 ca
@@ -154,23 +264,19 @@
 | 3 | `test_moi_nguoi_chi_danh_gia_mot_san_pham_mot_lan`<br>Moi nguoi chi danh gia mot san pham mot lan | Moi nguoi chi danh gia mot san pham mot lan |
 
 
-### 📄 `test_permissions.py` — 34 ca
+### 📄 `test_permissions.py` — 17 ca
 
-> GIAI ĐOẠN 1 — Unit Test phân quyền Read-only trong trang quản trị. Yêu cầu nghiệp vụ: ba resource nhạy cảm phải ở chế độ CHỈ ĐỌC đối với Admin thường, chỉ superuser mới được thêm/sửa/xoá: * Địa chỉ người dùng (dữ liệu cá nhân của khách) * Đánh giá sản phẩm (nội dung do khách viết, admin không được sửa hộ) * Giao dịch kho (sổ nhật ký kho, sửa được thì mất tính toàn vẹn) Các test dưới đây cấp cho Admin thường TOÀN BỘ permission của Django, nhằm chứng minh thứ chặn họ là ``ReadOnlyForStaffMixin`` chứ không phải do thiếu quyền.
+> GIAI ĐOẠN 1 — Unit Test phân quyền Read-only trong trang quản trị. Yêu cầu nghiệp vụ: ba resource nhạy cảm phải ở chế độ CHỈ ĐỌC đối với Admin thường, chỉ superuser mới được thêm/sửa/xoá: * Địa chỉ người dùng (dữ liệu cá nhân của khách) * Đánh giá sản phẩm (nội dung do khách viết, admin không được sửa hộ) * Giao dịch kho (sổ nhật ký kho, sửa được thì mất tính toàn vẹn) Cả ba dùng chung một cơ chế (``ReadOnlyForStaffMixin``), nên bộ test kiểm tra ĐẦY ĐỦ hành vi trên một model đại diện (Address), sau đó chỉ xác nhận ngắn gọn rằng hai model còn lại áp dụng đúng cùng cơ chế đó — tránh lặp lại y hệt bộ kiểm tra sáu chiều trên cả ba model một cách máy móc.
 
+#### 🔹 `TestReadOnlyResources` — 5 ca
 
-#### 🔹 `TestReadOnlyResources` — 18 ca
-
-**Mục đích:** Admin thường chỉ được XEM, không được thêm/sửa/xoá.
+**Mục đích:** Kiểm tra đầy đủ hành vi chỉ-đọc trên một model đại diện (Address).
 
 | # | Test case | Kiểm chứng điều gì |
 |:--:|---|---|
-| 1 | `test_admin_thuong_duoc_xem`<br>Admin thuong duoc xem 🔁 | Admin thuong duoc xem |
-| 2 | `test_admin_thuong_khong_duoc_them`<br>Admin thuong khong duoc them 🔁 | Admin thuong khong duoc them |
-| 3 | `test_admin_thuong_khong_duoc_sua`<br>Admin thuong khong duoc sua 🔁 | Admin thuong khong duoc sua |
-| 4 | `test_admin_thuong_khong_duoc_xoa`<br>Admin thuong khong duoc xoa 🔁 | Admin thuong khong duoc xoa |
-| 5 | `test_moi_truong_deu_bi_khoa_voi_admin_thuong`<br>Moi truong deu bi khoa voi admin thuong 🔁 | Moi truong deu bi khoa voi admin thuong |
-| 6 | `test_su_dung_dung_mixin_chi_doc`<br>Su dung dung mixin chi doc 🔁 | Su dung dung mixin chi doc |
+| 1 | `test_quyen_han_cua_admin_thuong`<br>Quyen han cua admin thuong | Quyen han cua admin thuong |
+| 2 | `test_moi_truong_deu_bi_khoa_voi_admin_thuong`<br>Moi truong deu bi khoa voi admin thuong | Moi truong deu bi khoa voi admin thuong |
+| 3 | `test_ca_ba_model_deu_dung_mixin_chi_doc` 🔁<br>Ca ba model deu dung mixin chi doc | Xác nhận hai model còn lại (Review, StockTransaction) dùng chung cơ chế. |
 
 
 #### 🔹 `TestSuperuserFullAccess` — 6 ca
@@ -179,8 +285,8 @@
 
 | # | Test case | Kiểm chứng điều gì |
 |:--:|---|---|
-| 1 | `test_superuser_duoc_them_sua_xoa`<br>Superuser duoc them sua xoa 🔁 | Superuser duoc them sua xoa |
-| 2 | `test_superuser_khong_bi_khoa_truong`<br>Superuser khong bi khoa truong 🔁 | Superuser khong bi khoa truong |
+| 1 | `test_superuser_duoc_them_sua_xoa` 🔁<br>Superuser duoc them sua xoa | Superuser duoc them sua xoa |
+| 2 | `test_superuser_khong_bi_khoa_truong` 🔁<br>Superuser khong bi khoa truong | Superuser khong bi khoa truong |
 
 
 #### 🔹 `TestEditableResourcesUnaffected` — 2 ca
@@ -189,25 +295,24 @@
 
 | # | Test case | Kiểm chứng điều gì |
 |:--:|---|---|
-| 1 | `test_admin_thuong_van_sua_duoc_san_pham_va_lo_hang`<br>Admin thuong van sua duoc san pham va lo hang 🔁 | Admin thuong van sua duoc san pham va lo hang |
+| 1 | `test_admin_thuong_van_sua_duoc_san_pham_va_lo_hang` 🔁<br>Admin thuong van sua duoc san pham va lo hang | Admin thuong van sua duoc san pham va lo hang |
 
 
-#### 🔹 `TestReadOnlyViaHttp` — 8 ca
+#### 🔹 `TestReadOnlyViaHttp` — 4 ca
 
 **Mục đích:** Kiểm chứng qua HTTP thật: trang thêm mới phải trả về 403.
 
 | # | Test case | Kiểm chứng điều gì |
 |:--:|---|---|
-| 1 | `test_admin_thuong_xem_duoc_nhung_khong_them_duoc`<br>Admin thuong xem duoc nhung khong them duoc 🔁 | Admin thuong xem duoc nhung khong them duoc |
+| 1 | `test_admin_thuong_xem_duoc_nhung_khong_them_duoc_qua_http`<br>Admin thuong xem duoc nhung khong them duoc qua http | Admin thuong xem duoc nhung khong them duoc qua http |
 | 2 | `test_admin_thuong_khong_sua_duoc_danh_gia_qua_http`<br>Admin thuong khong sua duoc danh gia qua http | Admin thuong khong sua duoc danh gia qua http |
-| 3 | `test_superuser_vao_duoc_trang_them_moi`<br>Superuser vao duoc trang them moi 🔁 | Superuser vao duoc trang them moi |
+| 3 | `test_superuser_vao_duoc_trang_them_moi_qua_http`<br>Superuser vao duoc trang them moi qua http | Superuser vao duoc trang them moi qua http |
 | 4 | `test_admin_thuong_van_them_duoc_san_pham`<br>Admin thuong van them duoc san pham | Admin thuong van them duoc san pham |
 
 
 ### 📄 `test_services.py` — 61 ca
 
 > GIAI ĐOẠN 1 — Unit Test tầng Service (nghiệp vụ cốt lõi). Kiểm thử ``apps/inventory/services.py`` và ``apps/orders/services.py``: * Xuất kho theo FIFO, ưu tiên lô có hạn sử dụng sớm nhất * Ghi vết mọi giao dịch kho (nhập / xuất / hoàn trả / điều chỉnh) * Lưu giá vốn (COGS) bình quân gia quyền tại thời điểm bán * Tính tổng tiền: Giá × Số lượng + Phí ship − Giảm giá * Đổi trạng thái đơn và hoàn trả tồn kho về ĐÚNG lô ban đầu khi huỷ đơn
-
 
 #### 🔹 `TestAllocateStock` — 10 ca
 
@@ -221,7 +326,7 @@
 | 4 | `test_lo_khong_co_han_su_dung_duoc_xuat_sau_cung`<br>Lo khong co han su dung duoc xuat sau cung | Lo khong co han su dung duoc xuat sau cung |
 | 5 | `test_bao_loi_khi_ton_kho_khong_du`<br>Bao loi khi ton kho khong du | Bao loi khi ton kho khong du |
 | 6 | `test_khong_tru_kho_khi_xuat_that_bai`<br>Khong tru kho khi xuat that bai | Giao dịch phải nguyên tử: thất bại thì tồn kho giữ nguyên. |
-| 7 | `test_bao_loi_khi_so_luong_khong_duong`<br>Bao loi khi so luong khong duong 🔁 | Bao loi khi so luong khong duong |
+| 7 | `test_bao_loi_khi_so_luong_khong_duong` 🔁<br>Bao loi khi so luong khong duong | Bao loi khi so luong khong duong |
 | 8 | `test_lay_toan_bo_ton_kho_con_lai`<br>Lay toan bo ton kho con lai | Lay toan bo ton kho con lai |
 
 
@@ -338,15 +443,11 @@
 
 ---
 
-## GIAI ĐOẠN 1b — INTEGRATION TEST — 96 ca
-
-*Kiểm thử tích hợp: gọi qua HTTP bằng Django test client, có view + template + database thật.*
-
+## GIAI ĐOẠN 1b — INTEGRATION TEST — 86 ca
 
 ### 📄 `test_auth_views.py` — 14 ca
 
 > Kiểm thử tích hợp: luồng xác thực qua HTTP (không cần trình duyệt).
-
 
 #### 🔹 `TestDangKy` — 3 ca
 
@@ -383,7 +484,6 @@
 ### 📄 `test_cart_views.py` — 20 ca
 
 > Kiểm thử tích hợp: giỏ hàng qua HTTP (session + LocalStorage).
-
 
 #### 🔹 `TestGioHang` — 8 ca
 
@@ -435,7 +535,6 @@
 
 > Kiểm thử tích hợp: lọc sản phẩm và CRUD đánh giá qua HTTP.
 
-
 #### 🔹 `TestLocSanPham` — 8 ca
 
 | # | Test case | Kiểm chứng điều gì |
@@ -464,15 +563,14 @@
 
 | # | Test case | Kiểm chứng điều gì |
 |:--:|---|---|
-| 1 | `test_trang_cong_mo_duoc`<br>Trang cong mo duoc 🔁 | Trang cong mo duoc |
+| 1 | `test_trang_cong_mo_duoc` 🔁<br>Trang cong mo duoc | Trang cong mo duoc |
 | 2 | `test_trang_chi_tiet_san_pham`<br>Trang chi tiet san pham | Trang chi tiet san pham |
 | 3 | `test_luot_xem_tang_sau_moi_lan_xem`<br>Luot xem tang sau moi lan xem | Luot xem tang sau moi lan xem |
 
 
-### 📄 `test_dashboard.py` — 23 ca
+### 📄 `test_dashboard.py` — 13 ca
 
 > Kiểm thử tích hợp: trang Dashboard của Admin. Bảo vệ khỏi lỗi ORDER BY / GROUP BY của SQL Server (mã 8127). SQL Server từ chối câu lệnh có ``ORDER BY`` trên cột không nằm trong ``GROUP BY``, trong khi SQLite bỏ qua. Driver ``mssql-django`` lại giữ nguyên ``ORDER BY`` mặc định của model khi câu lệnh có ``GROUP BY``, nên mọi truy vấn gom nhóm đều phải gọi ``.order_by()``. Test này phân tích trực tiếp câu SQL sinh ra nên bắt được lỗi ngay cả khi đang chạy trên SQLite.
-
 
 #### 🔹 `TestDashboard` — 6 ca
 
@@ -486,18 +584,19 @@
 | 6 | `test_truy_van_gom_nhom_khong_mang_theo_ordering_mac_dinh`<br>Truy van gom nhom khong mang theo ordering mac dinh | Truy van gom nhom khong mang theo ordering mac dinh |
 
 
-#### 🔹 `TestTrangAdminMoDuoc` — 17 ca
+#### 🔹 `TestTrangAdminMoDuoc` — 7 ca
+
+**Mục đích:** Mỗi app đăng ký ít nhất một trang admin — chọn một trang đại diện cho mỗi app thay vì liệt kê hết mọi model, vì cả 16 model đều đi qua cùng một cơ chế đăng ký/render của django-unfold.
 
 | # | Test case | Kiểm chứng điều gì |
 |:--:|---|---|
-| 1 | `test_superuser_mo_duoc_moi_trang`<br>Superuser mo duoc moi trang 🔁 | Superuser mo duoc moi trang |
+| 1 | `test_superuser_mo_duoc_moi_trang` 🔁<br>Superuser mo duoc moi trang | Superuser mo duoc moi trang |
 | 2 | `test_trang_sua_don_hang`<br>Trang sua don hang | Trang sua don hang |
 
 
 ### 📄 `test_templates.py` — 17 ca
 
 > Kiểm thử chất lượng template: không để lộ mã nguồn ra trang web.
-
 
 #### 🔹 `TestGhiChuTemplate` — 1 ca
 
@@ -514,7 +613,7 @@
 
 | # | Test case | Kiểm chứng điều gì |
 |:--:|---|---|
-| 1 | `test_trang_cong`<br>Trang cong 🔁 | Trang cong |
+| 1 | `test_trang_cong` 🔁<br>Trang cong | Trang cong |
 | 2 | `test_trang_chi_tiet_san_pham`<br>Trang chi tiet san pham | Trang chi tiet san pham |
 | 3 | `test_trang_gio_hang_co_san_pham`<br>Trang gio hang co san pham | Trang gio hang co san pham |
 | 4 | `test_trang_thanh_toan`<br>Trang thanh toan | Trang thanh toan |
@@ -524,15 +623,11 @@
 
 ---
 
-## GIAI ĐOẠN 2 — E2E TEST — 45 ca
+## GIAI ĐOẠN 2 — E2E TEST — 37 ca
 
-*Kiểm thử đầu-cuối: điều khiển trình duyệt Chromium thật bằng Playwright theo mô hình Page Object Model.*
-
-
-### 📄 `test_admin_flow.py` — 18 ca
+### 📄 `test_admin_flow.py` — 14 ca
 
 > GIAI ĐOẠN 2 — Kịch bản E2E luồng quản trị viên. Luồng: Đăng nhập /admin → Thêm lô hàng mới → Duyệt trạng thái đơn → Kiểm tra thống kê trên Dashboard.
-
 
 #### 🔹 `TestDangNhapAdmin` — 3 ca
 
@@ -560,16 +655,14 @@
 | 3 | `test_admin_huy_don_thi_kho_duoc_hoan_dung_lo`<br>Admin huy don thi kho duoc hoan dung lo | Admin huy don thi kho duoc hoan dung lo |
 
 
-#### 🔹 `TestDashboardThongKe` — 6 ca
+#### 🔹 `TestDashboardThongKe` — 2 ca
+
+**Mục đích:** Độ đúng của số liệu (tổng sản phẩm, đếm theo trạng thái, cảnh báo tồn kho/hết hạn) đã được kiểm thử chi tiết ở tầng tích hợp (``tests/integration/test_dashboard.py::TestDashboard``, đọc thẳng context trả về, không qua trình duyệt). Ở tầng E2E chỉ giữ lại hai ca: xác nhận giao diện thật render đúng, và ca chặn tái phát lỗi SQL Server thật sự từng xảy ra trên chính trang này.
 
 | # | Test case | Kiểm chứng điều gì |
 |:--:|---|---|
 | 1 | `test_dashboard_hien_du_bon_the_thong_ke`<br>Dashboard hien du bon the thong ke | Dashboard hien du bon the thong ke |
-| 2 | `test_so_lieu_thong_ke_khop_voi_database`<br>So lieu thong ke khop voi database | So lieu thong ke khop voi database |
-| 3 | `test_dem_don_hang_theo_trang_thai`<br>Dem don hang theo trang thai | Dem don hang theo trang thai |
-| 4 | `test_canh_bao_lo_sap_het_han`<br>Canh bao lo sap het han | Lô LO-SOM còn 10 ngày nên phải nằm trong danh sách cảnh báo. |
-| 5 | `test_canh_bao_san_pham_sap_het_ton_kho`<br>Canh bao san pham sap het ton kho | CPU0009 chưa có lô hàng nào nên tồn kho = 0. |
-| 6 | `test_dashboard_mo_duoc_tren_sql_server`<br>Dashboard mo duoc tren sql server | Chặn tái phát lỗi 8127 (ORDER BY không nằm trong GROUP BY). Trang này từng không mở được trên SQL Server. Chạy bộ test với ``TEST_ON_MSSQL=True`` sẽ kiểm chứng lại trên đúng CSDL thật. |
+| 2 | `test_dashboard_mo_duoc_tren_sql_server`<br>Dashboard mo duoc tren sql server | Chặn tái phát lỗi 8127 (ORDER BY không nằm trong GROUP BY). Trang này từng không mở được trên SQL Server. Chạy bộ test với ``TEST_ON_MSSQL=True`` sẽ kiểm chứng lại trên đúng CSDL thật. |
 
 
 #### 🔹 `TestPhanQuyenReadOnlyTrenGiaoDien` — 4 ca
@@ -578,14 +671,13 @@
 
 | # | Test case | Kiểm chứng điều gì |
 |:--:|---|---|
-| 1 | `test_khong_co_nut_them_moi`<br>Khong co nut them moi 🔁 | Khong co nut them moi |
+| 1 | `test_khong_co_nut_them_moi` 🔁<br>Khong co nut them moi | Khong co nut them moi |
 | 2 | `test_van_them_duoc_san_pham`<br>Van them duoc san pham | Van them duoc san pham |
 
 
-### 📄 `test_customer_flow.py` — 27 ca
+### 📄 `test_customer_flow.py` — 23 ca
 
 > GIAI ĐOẠN 2 — Kịch bản E2E luồng khách hàng. Luồng đầy đủ: Đăng ký → Đăng nhập → Lọc sản phẩm → Thêm giỏ hàng → Đặt hàng → Xem lịch sử → Huỷ đơn hợp lệ. Toàn bộ thao tác đi qua Page Object, không có selector rải rác trong test.
-
 
 #### 🔹 `TestDangKyVaDangNhap` — 5 ca
 
@@ -598,17 +690,15 @@
 | 5 | `test_dang_nhap_sai_mat_khau_bao_loi`<br>Dang nhap sai mat khau bao loi | Dang nhap sai mat khau bao loi |
 
 
-#### 🔹 `TestTimKiemVaLocSanPham` — 7 ca
+#### 🔹 `TestTimKiemVaLocSanPham` — 3 ca
+
+**Mục đích:** Logic lọc/sắp xếp đã được kiểm thử đầy đủ ở tầng tích hợp (``tests/integration/test_catalog_views.py::TestLocSanPham``, 8 ca qua HTTP trực tiếp). Ở tầng E2E chỉ cần xác nhận một lượt tìm kiếm đại diện hoạt động đúng qua giao diện thật, không lặp lại toàn bộ ma trận lọc.
 
 | # | Test case | Kiểm chứng điều gì |
 |:--:|---|---|
 | 1 | `test_hien_thi_toan_bo_san_pham`<br>Hien thi toan bo san pham | Hien thi toan bo san pham |
 | 2 | `test_tim_kiem_theo_tu_khoa`<br>Tim kiem theo tu khoa | Tim kiem theo tu khoa |
-| 3 | `test_loc_theo_danh_muc`<br>Loc theo danh muc | Loc theo danh muc |
-| 4 | `test_loc_theo_thuong_hieu`<br>Loc theo thuong hieu | Loc theo thuong hieu |
-| 5 | `test_loc_chi_hien_san_pham_con_hang`<br>Loc chi hien san pham con hang | Sản phẩm CPU0009 chưa có lô hàng nào nên phải bị loại khỏi kết quả. |
-| 6 | `test_loc_theo_khoang_gia`<br>Loc theo khoang gia | Loc theo khoang gia |
-| 7 | `test_khong_tim_thay_thi_hien_thong_bao`<br>Khong tim thay thi hien thong bao | Khong tim thay thi hien thong bao |
+| 3 | `test_khong_tim_thay_thi_hien_thong_bao`<br>Khong tim thay thi hien thong bao | Khong tim thay thi hien thong bao |
 
 
 #### 🔹 `TestGioHang` — 6 ca

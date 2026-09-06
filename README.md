@@ -100,16 +100,16 @@ Xem tài liệu đầy đủ ở **[TESTING.md](TESTING.md)**.
 pip install -r requirements-dev.txt
 playwright install chromium   # chỉ cần cho E2E, chạy một lần
 
-pytest                        # 248 test Unit + Integration (~4 giây)
-pytest -m e2e                 # 45 test E2E bằng trình duyệt thật (~40 giây)
-pytest --tat-ca               # tất cả 347 test
-pytest --cov=apps             # kèm báo cáo độ bao phủ
+pytest                        # 276 test Unit + Integration (~6 giây)
+pytest -m e2e                 # 37 test E2E bằng trình duyệt thật (~50 giây)
+pytest --tat-ca               # tất cả 313 test
+coverage run -m pytest --tat-ca && coverage report   # kèm báo cáo độ bao phủ
 ```
 
 | Loại | Số test | Phạm vi |
 |---|---|---|
-| Unit | 152 | Logic model và service: FIFO, hoàn kho đúng lô, COGS, mã giảm giá, phân quyền |
-| Integration | 96 | Qua HTTP: đăng ký/đăng nhập, lọc sản phẩm, giỏ hàng, đặt hàng, dashboard |
-| E2E | 45 | Trình duyệt thật (Playwright + Page Object Model): luồng khách hàng và quản trị |
+| Unit | 190 | Logic model và service: FIFO, hoàn kho đúng lô, COGS, mã giảm giá, phân quyền |
+| Integration | 86 | Qua HTTP: đăng ký/đăng nhập, lọc sản phẩm, giỏ hàng, đặt hàng, dashboard |
+| E2E | 37 | Trình duyệt thật (Playwright + Page Object Model): luồng khách hàng và quản trị |
 
-Bao phủ **95%** logic nghiệp vụ cốt lõi (`orders/services.py` đạt 100%).
+Bao phủ **88,2%** mã nguồn `apps/` (`orders/services.py` đạt 97,4%). Chi tiết ở [TESTING.md](TESTING.md#độ-phủ-code-coverage).

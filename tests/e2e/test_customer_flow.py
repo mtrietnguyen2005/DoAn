@@ -45,30 +45,16 @@ class TestDangKyVaDangNhap:
 
 
 class TestTimKiemVaLocSanPham:
+    """Logic lọc/sắp xếp đã được kiểm thử đầy đủ ở tầng tích hợp
+    (``tests/integration/test_catalog_views.py::TestLocSanPham``, 8 ca qua
+    HTTP trực tiếp). Ở tầng E2E chỉ cần xác nhận một lượt tìm kiếm đại diện
+    hoạt động đúng qua giao diện thật, không lặp lại toàn bộ ma trận lọc."""
+
     def test_hien_thi_toan_bo_san_pham(self, product_list_page, shop_data):
         product_list_page.go().expect_product_count(3)
 
     def test_tim_kiem_theo_tu_khoa(self, product_list_page, shop_data):
         product_list_page.go().search("RTX").expect_product_names(["ASUS Dual RTX 4060 OC"])
-
-    def test_loc_theo_danh_muc(self, product_list_page, shop_data):
-        product_list_page.go().filter_by_category(shop_data["category_vga"].slug) \
-            .expect_product_count(1)
-
-    def test_loc_theo_thuong_hieu(self, product_list_page, shop_data):
-        product_list_page.go().filter_by_brand(shop_data["brand_intel"].slug) \
-            .expect_product_count(2)
-
-    def test_loc_chi_hien_san_pham_con_hang(self, product_list_page, shop_data):
-        """Sản phẩm CPU0009 chưa có lô hàng nào nên phải bị loại khỏi kết quả."""
-        product_list_page.go().filter_in_stock_only()
-        names = product_list_page.product_names()
-        assert shop_data["product_out_of_stock"].name not in names
-        assert len(names) == 2
-
-    def test_loc_theo_khoang_gia(self, product_list_page, shop_data):
-        # Chỉ còn RTX (giá bán 7 triệu) và i9 (15 triệu)
-        product_list_page.go().filter_price(min_price=5000000).expect_product_count(2)
 
     def test_khong_tim_thay_thi_hien_thong_bao(self, product_list_page, shop_data):
         product_list_page.go().search("khong-ton-tai-san-pham-nay")

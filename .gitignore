@@ -20,3 +20,7 @@ test-results/
 htmlcov/
 .coverage
 reports/
+
+# Tệp trung gian khi sinh danh mục test case (scripts/trich_test_case.py)
+scripts/_nodes.txt
+scripts/_rows.pkl

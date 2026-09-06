@@ -105,7 +105,7 @@ jobs:
       - name: Cài trình duyệt Chromium cho Playwright
         run: python -m playwright install --with-deps chromium
 
-      - name: Chạy toàn bộ 359 test dưới coverage (--tat-ca gộp cả E2E)
+      - name: Chạy toàn bộ 313 test dưới coverage (--tat-ca gộp cả E2E)
         run: python -m coverage run -m pytest -q --tat-ca
 
       - name: In bảng độ phủ ra log

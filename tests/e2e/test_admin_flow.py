@@ -144,35 +144,18 @@ class TestDuyetTrangThaiDonHang:
 
 
 class TestDashboardThongKe:
+    """Độ đúng của số liệu (tổng sản phẩm, đếm theo trạng thái, cảnh báo tồn
+    kho/hết hạn) đã được kiểm thử chi tiết ở tầng tích hợp
+    (``tests/integration/test_dashboard.py::TestDashboard``, đọc thẳng
+    context trả về, không qua trình duyệt). Ở tầng E2E chỉ giữ lại hai ca:
+    xác nhận giao diện thật render đúng, và ca chặn tái phát lỗi SQL Server
+    thật sự từng xảy ra trên chính trang này."""
+
     def test_dashboard_hien_du_bon_the_thong_ke(self, admin_dashboard_page, shop_data,
                                                 don_hang_cho_duyet, logged_in_admin):
         admin_dashboard_page.go().expect_loaded()
         for tieu_de in ("Người dùng", "Sản phẩm", "Đơn hàng", "Đánh giá"):
             admin_dashboard_page.expect_text_visible(tieu_de)
-
-    def test_so_lieu_thong_ke_khop_voi_database(self, admin_dashboard_page, shop_data,
-                                                don_hang_cho_duyet, logged_in_admin):
-        from apps.catalog.models import Product
-
-        admin_dashboard_page.go()
-        assert admin_dashboard_page.stat_value("Sản phẩm") == Product.objects.count()
-        assert admin_dashboard_page.stat_value("Đơn hàng") == Order.objects.count()
-
-    def test_dem_don_hang_theo_trang_thai(self, admin_dashboard_page, don_hang_cho_duyet,
-                                          logged_in_admin):
-        admin_dashboard_page.go()
-        assert admin_dashboard_page.order_status_count("Chờ xác nhận") == 1
-
-    def test_canh_bao_lo_sap_het_han(self, admin_dashboard_page, shop_data, logged_in_admin):
-        """Lô LO-SOM còn 10 ngày nên phải nằm trong danh sách cảnh báo."""
-        admin_dashboard_page.go()
-        assert "LO-SOM" in admin_dashboard_page.expiring_batch_codes()
-
-    def test_canh_bao_san_pham_sap_het_ton_kho(self, admin_dashboard_page, shop_data,
-                                               logged_in_admin):
-        """CPU0009 chưa có lô hàng nào nên tồn kho = 0."""
-        admin_dashboard_page.go()
-        assert shop_data["product_out_of_stock"].sku in admin_dashboard_page.low_stock_skus()
 
     def test_dashboard_mo_duoc_tren_sql_server(self, admin_dashboard_page, don_hang_cho_duyet,
                                                logged_in_admin):

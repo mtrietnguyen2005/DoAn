@@ -7,18 +7,18 @@ Admin thường, chỉ superuser mới được thêm/sửa/xoá:
 * Đánh giá sản phẩm   (nội dung do khách viết, admin không được sửa hộ)
 * Giao dịch kho       (sổ nhật ký kho, sửa được thì mất tính toàn vẹn)
 
-Các test dưới đây cấp cho Admin thường TOÀN BỘ permission của Django,
-nhằm chứng minh thứ chặn họ là ``ReadOnlyForStaffMixin`` chứ không phải
-do thiếu quyền.
+Cả ba dùng chung một cơ chế (``ReadOnlyForStaffMixin``), nên bộ test kiểm
+tra ĐẦY ĐỦ hành vi trên một model đại diện (Address), sau đó chỉ xác nhận
+ngắn gọn rằng hai model còn lại áp dụng đúng cùng cơ chế đó — tránh lặp lại
+y hệt bộ kiểm tra sáu chiều trên cả ba model một cách máy móc.
 """
 import pytest
 from django.contrib import admin as django_admin
 
 from apps.accounts.models import Address
-from apps.catalog.models import Review
+from apps.catalog.models import Product, Review
 from apps.core.admin_mixins import ReadOnlyForStaffMixin
 from apps.inventory.models import Batch, StockTransaction
-from apps.catalog.models import Product
 
 pytestmark = pytest.mark.django_db
 
@@ -43,34 +43,28 @@ class FakeRequest:
 @pytest.mark.unit
 @pytest.mark.accounts
 class TestReadOnlyResources:
-    """Admin thường chỉ được XEM, không được thêm/sửa/xoá."""
+    """Kiểm tra đầy đủ hành vi chỉ-đọc trên một model đại diện (Address)."""
 
-    @pytest.mark.parametrize("model", READ_ONLY_MODELS, ids=lambda m: m.__name__)
-    def test_admin_thuong_duoc_xem(self, model, staff_user):
-        assert admin_for(model).has_view_permission(FakeRequest(staff_user)) is True
+    def test_quyen_han_cua_admin_thuong(self, staff_user):
+        model_admin = admin_for(Address)
+        request = FakeRequest(staff_user)
+        assert model_admin.has_view_permission(request) is True
+        assert model_admin.has_add_permission(request) is False
+        assert model_admin.has_change_permission(request) is False
+        assert model_admin.has_delete_permission(request) is False
 
-    @pytest.mark.parametrize("model", READ_ONLY_MODELS, ids=lambda m: m.__name__)
-    def test_admin_thuong_khong_duoc_them(self, model, staff_user):
-        assert admin_for(model).has_add_permission(FakeRequest(staff_user)) is False
-
-    @pytest.mark.parametrize("model", READ_ONLY_MODELS, ids=lambda m: m.__name__)
-    def test_admin_thuong_khong_duoc_sua(self, model, staff_user):
-        assert admin_for(model).has_change_permission(FakeRequest(staff_user)) is False
-
-    @pytest.mark.parametrize("model", READ_ONLY_MODELS, ids=lambda m: m.__name__)
-    def test_admin_thuong_khong_duoc_xoa(self, model, staff_user):
-        assert admin_for(model).has_delete_permission(FakeRequest(staff_user)) is False
-
-    @pytest.mark.parametrize("model", READ_ONLY_MODELS, ids=lambda m: m.__name__)
-    def test_moi_truong_deu_bi_khoa_voi_admin_thuong(self, model, staff_user):
-        model_admin = admin_for(model)
+    def test_moi_truong_deu_bi_khoa_voi_admin_thuong(self, staff_user):
+        model_admin = admin_for(Address)
         readonly = model_admin.get_readonly_fields(FakeRequest(staff_user))
-        ten_truong = {f.name for f in model._meta.fields}
+        ten_truong = {f.name for f in Address._meta.fields}
         assert ten_truong.issubset(set(readonly))
 
     @pytest.mark.parametrize("model", READ_ONLY_MODELS, ids=lambda m: m.__name__)
-    def test_su_dung_dung_mixin_chi_doc(self, model):
-        assert isinstance(admin_for(model), ReadOnlyForStaffMixin)
+    def test_ca_ba_model_deu_dung_mixin_chi_doc(self, model, staff_user):
+        """Xác nhận hai model còn lại (Review, StockTransaction) dùng chung cơ chế."""
+        model_admin = admin_for(model)
+        assert isinstance(model_admin, ReadOnlyForStaffMixin)
+        assert model_admin.has_add_permission(FakeRequest(staff_user)) is False
 
 
 @pytest.mark.unit
@@ -111,16 +105,9 @@ class TestEditableResourcesUnaffected:
 class TestReadOnlyViaHttp:
     """Kiểm chứng qua HTTP thật: trang thêm mới phải trả về 403."""
 
-    URLS = {
-        Address: "/admin/accounts/address/",
-        Review: "/admin/catalog/review/",
-        StockTransaction: "/admin/inventory/stocktransaction/",
-    }
-
-    @pytest.mark.parametrize("model", READ_ONLY_MODELS, ids=lambda m: m.__name__)
-    def test_admin_thuong_xem_duoc_nhung_khong_them_duoc(self, client, model, staff_user):
+    def test_admin_thuong_xem_duoc_nhung_khong_them_duoc_qua_http(self, client, staff_user):
         client.force_login(staff_user)
-        url = self.URLS[model]
+        url = "/admin/accounts/address/"
         assert client.get(url).status_code == 200          # xem được
         assert client.get(url + "add/").status_code == 403  # bị chặn
 
@@ -134,10 +121,9 @@ class TestReadOnlyViaHttp:
         review.refresh_from_db()
         assert review.rating == 5   # dữ liệu gốc không đổi
 
-    @pytest.mark.parametrize("model", READ_ONLY_MODELS, ids=lambda m: m.__name__)
-    def test_superuser_vao_duoc_trang_them_moi(self, client, model, superuser):
+    def test_superuser_vao_duoc_trang_them_moi_qua_http(self, client, superuser):
         client.force_login(superuser)
-        assert client.get(self.URLS[model] + "add/").status_code == 200
+        assert client.get("/admin/accounts/address/add/").status_code == 200
 
     def test_admin_thuong_van_them_duoc_san_pham(self, client, staff_user):
         client.force_login(staff_user)

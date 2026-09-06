@@ -1,8 +1,24 @@
 # -*- coding: utf-8 -*-
-"""Sinh file Excel danh mục test case từ mã nguồn thật."""
-import ast, pathlib, re, textwrap, collections
+"""Sinh file Excel danh mục test case từ mã nguồn thật.
 
-NODES = '/tmp/claude-0/-home-user-DoAn/4bd0e4cd-a226-54ea-a89a-898e70ea1209/scratchpad/nodes.txt'
+Tự chạy ``pytest --collect-only`` để lấy danh sách ca thật (kể cả parametrize),
+không cần bước tạo ``nodes.txt`` thủ công — script này và
+``sinh_excel_test_case.py`` phải dùng chung một tệp trung gian nên đường dẫn
+được tính tương đối theo thư mục ``scripts/``, chạy được trên mọi máy.
+"""
+import ast, pathlib, re, subprocess, sys, collections
+
+GOC = pathlib.Path(__file__).resolve().parent.parent
+NODES = GOC / 'scripts' / '_nodes.txt'
+RONG_PKL = GOC / 'scripts' / '_rows.pkl'
+
+ket_qua = subprocess.run(
+    [sys.executable, '-m', 'pytest', '--collect-only', '-q', '--tat-ca'],
+    cwd=GOC, capture_output=True, text=True, check=True,
+)
+NODES.write_text(
+    '\n'.join(d for d in ket_qua.stdout.splitlines() if '::' in d), encoding='utf-8'
+)
 
 TANG = {'unit': 'Unit', 'integration': 'Integration', 'e2e': 'E2E'}
 
@@ -128,9 +144,9 @@ for thu_muc in ('unit', 'integration', 'e2e'):
                     'Nhóm chức năng': lop.name,
                     'Tên test case': f.name,
                     'Ý nghĩa và cách thực thi': '\n'.join(phan),
-                    '_so_ca': dem_lop[(str(tep), lop.name)],
+                    '_so_ca': dem_lop[(str(tep).replace('\\', '/'), lop.name)],
                 })
 
 print(f'Đã trích {len(hang)} hàm test')
-import json, pickle
-pickle.dump(hang, open('/tmp/claude-0/-home-user-DoAn/4bd0e4cd-a226-54ea-a89a-898e70ea1209/scratchpad/rows.pkl','wb'))
+import pickle
+pickle.dump(hang, open(RONG_PKL, 'wb'))

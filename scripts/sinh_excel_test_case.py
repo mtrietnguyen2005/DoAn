@@ -4,8 +4,9 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
-NODES = '/tmp/claude-0/-home-user-DoAn/4bd0e4cd-a226-54ea-a89a-898e70ea1209/scratchpad/nodes.txt'
-hang = pickle.load(open('/tmp/claude-0/-home-user-DoAn/4bd0e4cd-a226-54ea-a89a-898e70ea1209/scratchpad/rows.pkl','rb'))
+GOC = pathlib.Path(__file__).resolve().parent.parent
+NODES = GOC / 'scripts' / '_nodes.txt'
+hang = pickle.load(open(GOC / 'scripts' / '_rows.pkl', 'rb'))
 
 # Số ca chạy thật của từng hàm (tính cả parametrize)
 dem = collections.Counter()
