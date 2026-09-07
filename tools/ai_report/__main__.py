@@ -67,9 +67,9 @@ def main(argv: list[str] | None = None) -> int:
     if cac_nhom and not tham_so.no_ai:
         if not analyze.co_khoa_api():
             print("⚠️  Chưa cấu hình khoá API — bỏ qua bước phân tích AI.\n"
-                  "    Đặt DEEPSEEK_API_KEY (hoặc ANTHROPIC_API_KEY) rồi chạy lại.")
+                  "    Đặt DEEPSEEK_API_KEY rồi chạy lại.")
         else:
-            print(f"🧠 Đang nhờ {analyze.nha_cung_cap()} ({analyze.ten_model()}) "
+            print(f"🧠 Đang nhờ DeepSeek ({analyze.MODEL_DEEPSEEK}) "
                   f"phân tích {len(cac_nhom)} nhóm lỗi...")
             try:
                 ket_qua_ai = analyze.phan_tich(cac_nhom, tom_tat)

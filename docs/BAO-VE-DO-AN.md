@@ -9,7 +9,7 @@
 
 | Chỉ số | Giá trị |
 |---|---|
-| Tổng số ca kiểm thử | **313** |
+| Tổng số ca kiểm thử | **309** |
 | Thời gian chạy toàn bộ | ~65 giây |
 | Độ bao phủ mã nguồn `apps/` | **88,2%** (`orders/services.py` đạt 97,4%) |
 | Số lỗi thật phát hiện được | **11** |
@@ -22,10 +22,10 @@
              ╱ ╲     E2E — 37 ca (12%)
             ╱───╲    Chậm nhất (~52s), đắt nhất, gần người dùng nhất
            ╱     ╲
-          ╱───────╲  Integration — 86 ca (27%)
+          ╱───────╲  Integration — 86 ca (28%)
          ╱         ╲ Trung bình (~2s), qua HTTP thật
         ╱───────────╲
-       ╱             ╲ Unit — 190 ca (61%)
+       ╱             ╲ Unit — 186 ca (60%)
       ╱───────────────╲ Nhanh nhất (~4s), rẻ nhất, nhiều nhất
 ```
 
@@ -182,8 +182,8 @@ def test_ngay_duoi_nguong_van_phai_tra_phi(...)  # sát biên dưới
 
 ## 6. Câu hỏi phản biện thường gặp
 
-**❓ Vì sao 313 test mà chỉ mất 65 giây?**
-Vì tỉ lệ kim tự tháp: 276 ca ở tầng rẻ (~6 giây), chỉ 37 ca dùng trình duyệt.
+**❓ Vì sao 309 test mà chỉ mất 65 giây?**
+Vì tỉ lệ kim tự tháp: 272 ca ở tầng rẻ (~6 giây), chỉ 37 ca dùng trình duyệt.
 Nếu làm toàn bộ bằng E2E thì sẽ mất khoảng 4 phút — chậm gấp 6 lần.
 
 **❓ Vì sao test chạy SQLite mà website dùng SQL Server?**
@@ -199,7 +199,7 @@ thì lần chạy **treo cứng không báo lỗi**. Em dùng `py-spy` chụp ng
 nhân: với SQLite bộ nhớ, Django ép mọi luồng xử lý request của `live_server` dùng
 chung **một** connection (`LiveServerThread.connections_override`), nên hai request
 đồng thời khoá nhau vĩnh viễn. Chuyển sang CSDL dạng tệp thì mỗi luồng có connection
-riêng — 313 test chạy trọn trong ~65 giây, phần không-E2E chỉ chậm hơn 0,3 giây.
+riêng — 309 test chạy trọn trong ~65 giây, phần không-E2E chỉ chậm hơn 0,3 giây.
 
 **❓ Làm sao đảm bảo các test không ảnh hưởng nhau?**
 `pytest-django` chạy mỗi test trong một transaction riêng và rollback khi kết thúc.
@@ -235,9 +235,9 @@ hơn chạy đua con số: `orders/services.py` — nơi chứa toàn bộ nghi�
 ## 7. Lệnh chạy để demo
 
 ```bash
-pytest                              # 276 ca Unit + Integration (~6 giây)
+pytest                              # 272 ca Unit + Integration (~6 giây)
 pytest -m e2e                       # 37 ca E2E (~52 giây)
-pytest --tat-ca                     # tất cả 313 ca
+pytest --tat-ca                     # tất cả 309 ca
 pytest -m inventory                 # chỉ nhóm nghiệp vụ kho
 pytest --cov=apps --cov-report=html # báo cáo độ bao phủ
 

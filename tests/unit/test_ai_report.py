@@ -301,50 +301,21 @@ class TestXuatBaoCao:
 # ============================================================================
 # AN TOÀN KHI GỌI API
 # ============================================================================
-class TestChonNhaCungCap:
-    """Công cụ hỗ trợ cả DeepSeek lẫn Claude, chọn theo khoá API đang có."""
-
-    KHOA = ("DEEPSEEK_API_KEY", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "AI_PROVIDER")
+class TestKiemTraKhoaApi:
+    """Chỉ gọi được DeepSeek khi đã cấu hình khoá API tương ứng."""
 
     @pytest.fixture(autouse=True)
     def xoa_bien_moi_truong(self, monkeypatch):
-        for k in self.KHOA:
-            monkeypatch.delenv(k, raising=False)
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
 
-    def test_chua_co_khoa_nao(self):
+    def test_chua_co_khoa_thi_khong_goi_duoc(self):
         from tools.ai_report import analyze
-        assert analyze.nha_cung_cap() is None
         assert analyze.co_khoa_api() is False
 
-    def test_tu_nhan_deepseek(self, monkeypatch):
+    def test_co_khoa_deepseek_thi_goi_duoc(self, monkeypatch):
         from tools.ai_report import analyze
         monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-gia-lap")
-        assert analyze.nha_cung_cap() == "deepseek"
         assert analyze.co_khoa_api() is True
-
-    def test_tu_nhan_claude(self, monkeypatch):
-        from tools.ai_report import analyze
-        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-gia-lap")
-        assert analyze.nha_cung_cap() == "claude"
-
-    def test_co_ca_hai_thi_uu_tien_deepseek(self, monkeypatch):
-        from tools.ai_report import analyze
-        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-gia-lap")
-        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-gia-lap")
-        assert analyze.nha_cung_cap() == "deepseek"
-
-    def test_bien_AI_PROVIDER_thang_tat_ca(self, monkeypatch):
-        from tools.ai_report import analyze
-        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-gia-lap")
-        monkeypatch.setenv("AI_PROVIDER", "claude")
-        assert analyze.nha_cung_cap() == "claude"
-
-    def test_gia_tri_AI_PROVIDER_la_bi_bo_qua(self, monkeypatch):
-        """Đặt sai tên nhà cung cấp thì quay về tự phát hiện, không gãy."""
-        from tools.ai_report import analyze
-        monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-gia-lap")
-        monkeypatch.setenv("AI_PROVIDER", "khong-ton-tai")
-        assert analyze.nha_cung_cap() == "deepseek"
 
 
 class TestXuLyPhanHoiDeepSeek:
@@ -382,7 +353,6 @@ class TestXuLyPhanHoiDeepSeek:
 
         monkeypatch.setattr(openai, "OpenAI", _Client)
         monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-gia-lap")
-        monkeypatch.delenv("AI_PROVIDER", raising=False)
 
     @pytest.fixture
     def nhom_sach(self):
@@ -446,7 +416,6 @@ class TestRaoChanBaoMat:
         from tools.ai_report import analyze
 
         monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-gia-lap-de-test")
-        monkeypatch.delenv("AI_PROVIDER", raising=False)
         nhom_ban = [{
             "van_tay": "x", "loai_loi": "Loi", "thong_diep": "m", "so_luong": 1,
             "cac_tang": ["unit"],
@@ -458,8 +427,7 @@ class TestRaoChanBaoMat:
     def test_khong_co_khoa_api_thi_tra_ve_none(self, monkeypatch):
         from tools.ai_report import analyze
 
-        for k in ("DEEPSEEK_API_KEY", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "AI_PROVIDER"):
-            monkeypatch.delenv(k, raising=False)
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
         assert analyze.phan_tich([{"van_tay": "x"}], {}) is None
 
     def test_khong_co_loi_thi_khong_goi_api(self):

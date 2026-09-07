@@ -4,10 +4,10 @@ Bộ kiểm thử được chia làm 3 giai đoạn. **Giai đoạn 1 đã hoàn
 
 | Giai đoạn | Công nghệ | Trạng thái |
 |---|---|---|
-| 1. Unit Test | `pytest` + `pytest-django` | ✅ Hoàn thành — 190 test |
+| 1. Unit Test | `pytest` + `pytest-django` | ✅ Hoàn thành — 186 test |
 | 1b. Integration | `pytest-django` (qua HTTP) | ✅ Hoàn thành — 86 test |
 | 2. E2E Test | `pytest-playwright` (Page Object Model) | ✅ Hoàn thành — 37 test |
-| 3. AI phân tích log lỗi | DeepSeek/Claude API + Pydantic | ✅ Hoàn thành (thay cho phương án Postman ban đầu, xem mục *Giai đoạn 3*) |
+| 3. AI phân tích log lỗi | DeepSeek API + Pydantic | ✅ Hoàn thành (thay cho phương án Postman ban đầu, xem mục *Giai đoạn 3*) |
 
 ---
 
@@ -45,7 +45,7 @@ pytest -n auto                              # chạy song song cho nhanh
 Bộ test dùng cấu hình riêng `config/settings_test.py`, **mặc định chạy SQLite ghi ra tệp
 `.pytest-db.sqlite3`** bất kể `.env` của bạn đặt `DB_ENGINE` là gì. Lý do:
 
-* Nhanh (276 test không-E2E chạy trong ~6 giây)
+* Nhanh (272 test không-E2E chạy trong ~6 giây)
 * Không đụng tới database thật
 * Ai clone dự án về cũng chạy được ngay, không cần cài SQL Server
 
@@ -54,7 +54,7 @@ WSGI đa luồng. Với SQLite trong bộ nhớ, Django buộc mọi luồng x�
 **một** connection duy nhất (`LiveServerThread.connections_override`). Hai request đồng thời
 — chuyện xảy ra thường xuyên ở trang admin, vừa tải HTML vừa gọi autocomplete — khoá nhau
 vĩnh viễn trên connection đó, và lần chạy `pytest --tat-ca` **đứng im chứ không báo lỗi**.
-Dùng CSDL dạng tệp thì mỗi luồng mở connection riêng, hết tranh chấp: 313 test chạy trọn
+Dùng CSDL dạng tệp thì mỗi luồng mở connection riêng, hết tranh chấp: 309 test chạy trọn
 trong ~65 giây. Cái giá phải trả chỉ là 0,3 giây chậm hơn ở phần không-E2E.
 
 ### ⚠️ Chạy test trên SQL Server trước khi nộp
@@ -95,12 +95,12 @@ TEST_ON_MSSQL=True pytest
 
 ## Tích hợp liên tục (CI)
 
-`.github/workflows/ci.yml` tự động chạy toàn bộ 313 test trên GitHub Actions ở
+`.github/workflows/ci.yml` tự động chạy toàn bộ 309 test trên GitHub Actions ở
 mỗi lần push và mỗi pull request, tách thành hai job chạy song song:
 
 | Job | Chạy gì | Vì sao tách riêng |
 |---|---|---|
-| `unit-integration` | 276 ca không cần trình duyệt | Chạy trong vài giây, thất bại sớm phát hiện lỗi logic ngay |
+| `unit-integration` | 272 ca không cần trình duyệt | Chạy trong vài giây, thất bại sớm phát hiện lỗi logic ngay |
 | `e2e` | 37 ca Playwright, tự cài Chromium bằng `playwright install --with-deps` | Chậm hơn (~1 phút), tách riêng để không làm job kia chờ |
 
 Cả hai job **không cần `.env`, không cần SQL Server** — `config/settings_test.py`
@@ -128,7 +128,7 @@ coverage report
 coverage html -d reports/coverage_html
 ```
 
-Kết quả đo được (313 test, `apps/` — loại `migrations/`, `tests/`,
+Kết quả đo được (309 test, `apps/` — loại `migrations/`, `tests/`,
 `manage.py` và `seed_data.py` vì đây là script chèn dữ liệu mẫu, không phải
 logic nghiệp vụ):
 
@@ -262,11 +262,11 @@ migrate lại từ đầu. **Khi đổi model, bắt buộc chạy `pytest --cre
 ### Tổng số test
 
 ```
-Unit          190    (tests/unit/)
+Unit          186    (tests/unit/)
 Integration    86    (tests/integration/)
 E2E            37    (tests/e2e/)
              -----
-TỔNG          313
+TỔNG          309
 ```
 
 ### Độ bao phủ logic nghiệp vụ cốt lõi
@@ -523,7 +523,7 @@ Giờ chỉ còn một lệnh duy nhất: `pytest`.
 | Tài liệu | Nội dung |
 |---|---|
 | [docs/BAO-VE-DO-AN.md](docs/BAO-VE-DO-AN.md) | Kim tự tháp kiểm thử, nghiệp vụ được kiểm thử, 11 lỗi phát hiện được, câu hỏi phản biện |
-| [docs/DANH-MUC-TEST-CASE.md](docs/DANH-MUC-TEST-CASE.md) | Bảng chi tiết toàn bộ 313 ca |
+| [docs/DANH-MUC-TEST-CASE.md](docs/DANH-MUC-TEST-CASE.md) | Bảng chi tiết toàn bộ 309 ca |
 | [docs/CHIEN-LUOC-BAT-ELEMENT.md](docs/CHIEN-LUOC-BAT-ELEMENT.md) | Cách định vị phần tử, 3 bẫy đã gặp thật, auto-waiting, Page Object Model |
 
 > Danh mục test case là ảnh chụp thủ công tại thời điểm viết (tên, mô tả lấy
@@ -553,7 +553,7 @@ xây công cụ **đọc log lỗi và sinh báo cáo phân tích tự động**
 ### Cách chạy
 
 > **Trước tiên phải cài đủ thư viện.** Ba gói của giai đoạn 3
-> (`pytest-json-report`, `openai`, `anthropic`) được thêm vào
+> (`pytest-json-report`, `openai`) được thêm vào
 > `requirements-dev.txt` sau giai đoạn 1-2, nên nếu bạn đã cài từ trước thì
 > phải cài lại, nếu không pytest sẽ báo `unrecognized arguments: --json-report`:
 >
@@ -573,7 +573,7 @@ Nếu muốn chạy tách làm hai lượt (ví dụ để chạy phần E2E ri�
 `tools.ai_report` gộp được nhiều tệp kết quả:
 
 ```bash
-pytest --json-report --json-report-file=reports/a.json            # 276 ca không-E2E
+pytest --json-report --json-report-file=reports/a.json            # 272 ca không-E2E
 pytest -m e2e --json-report --json-report-file=reports/b.json     # 37 ca E2E
 python -m tools.ai_report --input reports/a.json reports/b.json
 ```
@@ -601,24 +601,20 @@ Không có khoá thì công cụ **vẫn chạy bình thường**, chỉ thiếu
 > môi trường như trên, hoặc thêm dòng `DEEPSEEK_API_KEY=sk-...` vào tệp `.env`
 > (tệp này đã nằm trong `.gitignore`). Nếu lỡ để lộ khoá, hãy thu hồi và tạo khoá mới.
 
-### Hỗ trợ hai nhà cung cấp AI
+### Nhà cung cấp AI: DeepSeek
 
-| Nhà cung cấp | Biến môi trường | Model mặc định | Đổi model bằng |
-|---|---|---|---|
-| **DeepSeek** *(mặc định)* | `DEEPSEEK_API_KEY` | `deepseek-chat` | `DEEPSEEK_MODEL` |
-| Claude | `ANTHROPIC_API_KEY` | `claude-opus-5` | `CLAUDE_MODEL` |
+| Biến môi trường | Model mặc định | Đổi model bằng |
+|---|---|---|
+| `DEEPSEEK_API_KEY` | `deepseek-chat` | `DEEPSEEK_MODEL` |
 
-Công cụ tự phát hiện theo khoá đang có. Có cả hai thì ưu tiên DeepSeek; muốn chỉ định
-rõ thì đặt `AI_PROVIDER=deepseek` hoặc `AI_PROVIDER=claude`.
-
-**Khác biệt kỹ thuật giữa hai bên** — đây là điểm đáng nêu khi bảo vệ:
+**Vì sao vẫn phải xác thực lại bằng Pydantic dù DeepSeek đã ép JSON hợp lệ** — đây là
+điểm đáng nêu khi bảo vệ:
 
 DeepSeek dùng giao thức tương thích OpenAI, có chế độ `response_format={"type":"json_object"}`
 bảo đảm trả về **JSON hợp lệ**, nhưng **không bảo đảm đúng lược đồ** — AI vẫn có thể
 thiếu trường hoặc điền giá trị ngoài danh sách cho phép. Vì vậy công cụ **kiểm tra lại
 bằng Pydantic** sau khi nhận, và báo lỗi rõ ràng nếu sai thay vì để dữ liệu hỏng lọt vào
-báo cáo. Claude thì ràng buộc lược đồ ngay ở phía máy chủ nên không cần bước này —
-nhưng công cụ vẫn kiểm tra cho cả hai, vì phòng thủ nhiều lớp là rẻ.
+báo cáo.
 
 | Tuỳ chọn | Ý nghĩa |
 |---|---|
@@ -633,7 +629,7 @@ nhưng công cụ vẫn kiểm tra cho cả hai, vì phòng thủ nhiều lớp 
 | `tools/ai_report/redact.py` | **Lọc thông tin nhạy cảm** trước khi gửi ra ngoài |
 | `tools/ai_report/collect.py` | Đọc kết quả pytest, gom nhóm lỗi, đính kèm ảnh E2E |
 | `tools/ai_report/history.py` | So sánh với lần chạy trước |
-| `tools/ai_report/analyze.py` | Gọi DeepSeek hoặc Claude, kiểm tra lược đồ phản hồi |
+| `tools/ai_report/analyze.py` | Gọi DeepSeek, kiểm tra lược đồ phản hồi |
 | `tools/ai_report/render.py` | Xuất báo cáo Markdown và HTML |
 
 ### Bốn quyết định thiết kế đáng nói khi bảo vệ

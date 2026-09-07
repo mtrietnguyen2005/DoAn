@@ -1,12 +1,7 @@
-"""Gửi log lỗi ĐÃ LỌC cho AI và nhận về phân tích có cấu trúc.
+"""Gửi log lỗi ĐÃ LỌC cho DeepSeek và nhận về phân tích có cấu trúc.
 
-Hỗ trợ hai nhà cung cấp:
-
-* **DeepSeek** (mặc định) — dùng SDK ``openai`` trỏ tới ``api.deepseek.com``
-* **Claude** — dùng SDK ``anthropic``
-
-Chọn nhà cung cấp bằng biến môi trường ``AI_PROVIDER``, hoặc để trống thì tự
-phát hiện theo khoá API đang có.
+Dùng SDK ``openai`` trỏ tới ``api.deepseek.com`` — DeepSeek cung cấp API
+tương thích chuẩn OpenAI nên không cần SDK riêng.
 
 Hai nguyên tắc bắt buộc:
 
@@ -25,10 +20,8 @@ from pydantic import BaseModel, Field, ValidationError
 
 from .redact import kiem_tra_con_sot
 
-#: Cấu hình mặc định cho từng nhà cung cấp
 DIA_CHI_DEEPSEEK = "https://api.deepseek.com"
 MODEL_DEEPSEEK = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
-MODEL_CLAUDE = os.environ.get("CLAUDE_MODEL", "claude-opus-5")
 
 HUONG_DAN = """Bạn là chuyên gia kiểm thử phần mềm, đang phân tích log lỗi của một
 bộ kiểm thử tự động viết bằng pytest cho ứng dụng Django (website bán linh kiện máy tính).
@@ -76,36 +69,9 @@ class LoiBaoMat(Exception):
     """Phát hiện thông tin nhạy cảm còn sót — dừng, không gửi đi."""
 
 
-# ============================================================================
-# CHỌN NHÀ CUNG CẤP
-# ============================================================================
-def nha_cung_cap() -> str | None:
-    """Trả về 'deepseek', 'claude' hoặc None nếu chưa cấu hình khoá nào.
-
-    Ưu tiên biến ``AI_PROVIDER`` nếu người dùng chỉ định rõ.
-    """
-    chon = os.environ.get("AI_PROVIDER", "").strip().lower()
-    if chon in ("deepseek", "claude"):
-        return chon
-    if os.environ.get("DEEPSEEK_API_KEY"):
-        return "deepseek"
-    if os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"):
-        return "claude"
-    return None
-
-
-def ten_model() -> str:
-    return {"deepseek": MODEL_DEEPSEEK, "claude": MODEL_CLAUDE}.get(nha_cung_cap(), "—")
-
-
 def co_khoa_api() -> bool:
-    """Đã cấu hình đủ để gọi API chưa."""
-    ncc = nha_cung_cap()
-    if ncc == "deepseek":
-        return bool(os.environ.get("DEEPSEEK_API_KEY"))
-    if ncc == "claude":
-        return bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"))
-    return False
+    """Đã cấu hình khoá API của DeepSeek chưa."""
+    return bool(os.environ.get("DEEPSEEK_API_KEY"))
 
 
 # ============================================================================
@@ -174,25 +140,6 @@ def _goi_deepseek(noi_dung: str) -> KetQuaPhanTich:
     return KetQuaPhanTich.model_validate_json(van_ban)
 
 
-def _goi_claude(noi_dung: str) -> KetQuaPhanTich:
-    """Gọi Claude. SDK bảo đảm luôn đúng lược đồ nhờ structured output."""
-    import anthropic
-
-    client = anthropic.Anthropic()
-    phan_hoi = client.messages.parse(
-        model=MODEL_CLAUDE,
-        max_tokens=16000,
-        system=HUONG_DAN,
-        thinking={"type": "adaptive"},
-        messages=[{
-            "role": "user",
-            "content": f"Đây là kết quả chạy test có lỗi. Hãy phân tích từng nhóm:\n\n{noi_dung}",
-        }],
-        output_format=KetQuaPhanTich,
-    )
-    return phan_hoi.parsed_output
-
-
 def phan_tich(cac_nhom: list[dict], tom_tat: dict) -> KetQuaPhanTich | None:
     """Nhờ AI phân tích các nhóm lỗi.
 
@@ -207,10 +154,4 @@ def phan_tich(cac_nhom: list[dict], tom_tat: dict) -> KetQuaPhanTich | None:
 
     noi_dung = _dung_du_lieu_gui(cac_nhom, tom_tat)
     _kiem_tra_an_toan(noi_dung)
-
-    ncc = nha_cung_cap()
-    if ncc == "deepseek":
-        return _goi_deepseek(noi_dung)
-    if ncc == "claude":
-        return _goi_claude(noi_dung)
-    return None
+    return _goi_deepseek(noi_dung)

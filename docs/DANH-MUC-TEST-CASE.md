@@ -5,21 +5,21 @@
 > sinh tự động đã được gỡ khỏi repo; nếu test thay đổi sau này, tệp này **không
 > tự cập nhật** — cần sửa tay hoặc viết lại script tương tự.
 
-**Tổng cộng: 313 ca kiểm thử** (190 Unit + 86 Integration + 37 E2E)
+**Tổng cộng: 309 ca kiểm thử** (186 Unit + 86 Integration + 37 E2E)
 
 | Giai đoạn | Số ca |
 |---|---|
-| Unit | 190 |
+| Unit | 186 |
 | Integration | 86 |
 | E2E (Playwright) | 37 |
-| **Tổng** | **313** |
+| **Tổng** | **309** |
 
 
 ---
 
-## GIAI ĐOẠN 1 — UNIT TEST — 190 ca
+## GIAI ĐOẠN 1 — UNIT TEST — 186 ca
 
-### 📄 `test_ai_report.py` — 55 ca
+### 📄 `test_ai_report.py` — 51 ca
 
 > Kiểm thử công cụ phân tích log lỗi bằng AI. Chỉ kiểm thử phần TẤT ĐỊNH (lọc thông tin nhạy cảm, gom nhóm, so sánh lịch sử, xuất báo cáo). Phần gọi API không kiểm thử ở đây vì kết quả không tất định và tốn chi phí — nó được giả lập bằng đối tượng thay thế.
 
@@ -98,18 +98,14 @@
 | 7 | `test_html_hop_le`<br>Html hop le | Html hop le |
 
 
-#### 🔹 `TestChonNhaCungCap` — 6 ca
+#### 🔹 `TestKiemTraKhoaApi` — 2 ca
 
-**Mục đích:** Công cụ hỗ trợ cả DeepSeek lẫn Claude, chọn theo khoá API đang có.
+**Mục đích:** Chỉ gọi được DeepSeek khi đã cấu hình khoá API tương ứng.
 
 | # | Test case | Kiểm chứng điều gì |
 |:--:|---|---|
-| 1 | `test_chua_co_khoa_nao`<br>Chua co khoa nao | Chua co khoa nao |
-| 2 | `test_tu_nhan_deepseek`<br>Tu nhan deepseek | Tu nhan deepseek |
-| 3 | `test_tu_nhan_claude`<br>Tu nhan claude | Tu nhan claude |
-| 4 | `test_co_ca_hai_thi_uu_tien_deepseek`<br>Co ca hai thi uu tien deepseek | Co ca hai thi uu tien deepseek |
-| 5 | `test_bien_AI_PROVIDER_thang_tat_ca`<br>Bien ai provider thang tat ca | Bien ai provider thang tat ca |
-| 6 | `test_gia_tri_AI_PROVIDER_la_bi_bo_qua`<br>Gia tri ai provider la bi bo qua | Đặt sai tên nhà cung cấp thì quay về tự phát hiện, không gãy. |
+| 1 | `test_chua_co_khoa_thi_khong_goi_duoc`<br>Chua co khoa thi khong goi duoc | Chua co khoa thi khong goi duoc |
+| 2 | `test_co_khoa_deepseek_thi_goi_duoc`<br>Co khoa deepseek thi goi duoc | Co khoa deepseek thi goi duoc |
 
 
 #### 🔹 `TestXuLyPhanHoiDeepSeek` — 3 ca
