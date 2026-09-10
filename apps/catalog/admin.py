@@ -52,7 +52,7 @@ class BatchInline(TabularInline):
 
     model = Batch
     extra = 0
-    fields = ("batch_code", "supplier", "quantity_in", "quantity_remaining", "cost_price", "received_date", "expiry_date")
+    fields = ("batch_code", "supplier", "quantity_in", "quantity_remaining", "cost_price", "received_date")
     readonly_fields = ("quantity_remaining",)
     show_change_link = True
 

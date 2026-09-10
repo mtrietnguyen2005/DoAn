@@ -23,7 +23,7 @@ from apps.core.dashboard import dashboard_callback
 pytestmark = pytest.mark.django_db
 
 COLUMN_RE = re.compile(r'"(\w+)"\."(\w+)"')
-LAZY_KEYS = ("expiring_batches", "low_stock_products", "recent_orders")
+LAZY_KEYS = ("low_stock_products", "recent_orders")
 
 
 @pytest.fixture
@@ -35,10 +35,10 @@ def dashboard_request(superuser):
 
 @pytest.fixture
 def du_lieu_dashboard(product_with_batches, order, batch_factory, product_factory):
-    """Có sẵn đơn hàng, lô sắp hết hạn và sản phẩm sắp hết tồn kho."""
+    """Có sẵn đơn hàng và sản phẩm sắp hết tồn kho."""
     sap_het = product_factory(name="Hàng sắp hết", sku="LOW001")
     batch_factory(sap_het, quantity=2, cost_price=100000,
-                  expiry_in_days=3, batch_code="LO-SAPHETHAN")
+                  received_days_ago=3, batch_code="LO-SAPHETTON")
     return {"order": order}
 
 
@@ -54,7 +54,7 @@ class TestDashboard:
     def test_tra_ve_du_cac_muc_thong_ke(self, dashboard_request, du_lieu_dashboard):
         context, _ = chay_dashboard(dashboard_request)
         for key in ("stat_cards", "revenue_month", "profit_month", "order_status_counts",
-                    "expiring_batches", "low_stock_products", "recent_orders"):
+                    "low_stock_products", "recent_orders"):
             assert key in context
         assert len(context["stat_cards"]) == 4
 
@@ -62,11 +62,6 @@ class TestDashboard:
         context, _ = chay_dashboard(dashboard_request)
         theo_trang_thai = {r["code"]: r["value"] for r in context["order_status_counts"]}
         assert theo_trang_thai["pending"] == 1
-
-    def test_liet_ke_lo_sap_het_han(self, dashboard_request, du_lieu_dashboard):
-        context, _ = chay_dashboard(dashboard_request)
-        ma_lo = [b.batch_code for b in context["expiring_batches"]]
-        assert "LO-SAPHETHAN" in ma_lo
 
     def test_liet_ke_san_pham_sap_het_ton_kho(self, dashboard_request, du_lieu_dashboard):
         context, _ = chay_dashboard(dashboard_request)

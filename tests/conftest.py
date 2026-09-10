@@ -179,14 +179,14 @@ def batch_factory(db):
     """Tạo lô hàng tuỳ ý cho một sản phẩm."""
     counter = {"n": 0}
 
-    def _make(product, quantity=10, cost_price=1000000, expiry_in_days=None, **kwargs):
+    def _make(product, quantity=10, cost_price=1000000, received_days_ago=None, **kwargs):
         counter["n"] += 1
         kwargs.setdefault("batch_code", f"LO{counter['n']:04d}")
         kwargs.setdefault("quantity_in", quantity)
         kwargs.setdefault("quantity_remaining", quantity)
         kwargs.setdefault("cost_price", Decimal(cost_price))
-        if expiry_in_days is not None:
-            kwargs.setdefault("expiry_date", timezone.localdate() + timedelta(days=expiry_in_days))
+        if received_days_ago is not None:
+            kwargs.setdefault("received_date", timezone.localdate() - timedelta(days=received_days_ago))
         return Batch.objects.create(product=product, **kwargs)
 
     return _make
@@ -194,19 +194,19 @@ def batch_factory(db):
 
 @pytest.fixture
 def batch_early(product, batch_factory):
-    """Lô A: hạn sử dụng SỚM (10 ngày), 4 sản phẩm, giá vốn 1.000.000đ.
+    """Lô A: nhập kho SỚM (30 ngày trước), 4 sản phẩm, giá vốn 1.000.000đ.
 
     Theo quy tắc FIFO thì lô này phải được xuất kho TRƯỚC.
     """
     return batch_factory(product, quantity=4, cost_price=1000000,
-                         expiry_in_days=10, batch_code="LO-SOM")
+                         received_days_ago=30, batch_code="LO-SOM")
 
 
 @pytest.fixture
 def batch_late(product, batch_factory):
-    """Lô B: hạn sử dụng MUỘN (200 ngày), 10 sản phẩm, giá vốn 1.200.000đ."""
+    """Lô B: nhập kho MUỘN (5 ngày trước), 10 sản phẩm, giá vốn 1.200.000đ."""
     return batch_factory(product, quantity=10, cost_price=1200000,
-                         expiry_in_days=200, batch_code="LO-MUON")
+                         received_days_ago=5, batch_code="LO-MUON")
 
 
 @pytest.fixture

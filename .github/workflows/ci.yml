@@ -1,4 +1,5 @@
-name: CI
+name: CI Pipeline
+run-name: "Luồng kiểm thử tự động (CI)"
 
 on:
   push:

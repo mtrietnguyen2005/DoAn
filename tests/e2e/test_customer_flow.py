@@ -130,7 +130,7 @@ class TestDatHangVaHuyDon:
 
     def test_dat_hang_lam_giam_ton_kho_dung_lo(self, page, site_url, cart_page,
                                                shop_data, logged_in_customer):
-        """Lô hết hạn sớm phải bị trừ trước (FIFO)."""
+        """Lô nhập kho sớm phải bị trừ trước (FIFO)."""
         self._dat_hang(page, site_url, cart_page, shop_data, quantity=2)
 
         shop_data["batch_early"].refresh_from_db()

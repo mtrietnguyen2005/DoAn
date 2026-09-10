@@ -203,12 +203,12 @@ def shop_data(transactional_db):
     batch_early = Batch.objects.create(
         product=core_i5, batch_code="LO-SOM", supplier=supplier,
         quantity_in=4, quantity_remaining=4, cost_price=Decimal(1000000),
-        received_date=today - timedelta(days=30), expiry_date=today + timedelta(days=10),
+        received_date=today - timedelta(days=30),
     )
     batch_late = Batch.objects.create(
         product=core_i5, batch_code="LO-MUON", supplier=supplier,
         quantity_in=10, quantity_remaining=10, cost_price=Decimal(1200000),
-        received_date=today - timedelta(days=5), expiry_date=today + timedelta(days=200),
+        received_date=today - timedelta(days=5),
     )
 
     # Sản phẩm đắt, đang giảm giá — dùng để kiểm tra bộ lọc

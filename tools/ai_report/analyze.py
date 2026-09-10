@@ -31,8 +31,8 @@ Bộ test có ba tầng:
 - integration: gọi qua HTTP bằng Django test client (LƯU Ý: mặc định TẮT kiểm tra CSRF)
 - e2e: điều khiển trình duyệt thật bằng Playwright
 
-Nghiệp vụ cốt lõi gồm: quản lý tồn kho theo lô hàng, xuất kho FIFO ưu tiên lô hết hạn
-sớm nhất, lưu giá vốn COGS bình quân gia quyền tại thời điểm bán, và hoàn trả hàng về
+Nghiệp vụ cốt lõi gồm: quản lý tồn kho theo lô hàng, xuất kho FIFO ưu tiên lô có ngày
+nhập kho sớm nhất, lưu giá vốn COGS bình quân gia quyền tại thời điểm bán, và hoàn trả hàng về
 đúng lô ban đầu khi hủy đơn.
 
 Với mỗi NHÓM lỗi được cung cấp, hãy phân tích và trả về kết quả dạng json.

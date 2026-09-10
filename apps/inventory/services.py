@@ -1,6 +1,5 @@
 """Nghiệp vụ kho: phân bổ tồn kho theo lô (FIFO) và hoàn trả về đúng lô ban đầu."""
 from django.db import transaction
-from django.db.models import F
 
 from .models import Batch, StockTransaction
 
@@ -11,10 +10,13 @@ class OutOfStockError(Exception):
 
 @transaction.atomic
 def allocate_stock(product, quantity, *, reference="", user=None, note=""):
-    """Trừ tồn kho của ``product`` theo nguyên tắc FIFO (ưu tiên lô hết hạn trước).
+    """Trừ tồn kho của ``product`` theo nguyên tắc FIFO (lô nhập kho trước xuất trước).
 
     Trả về danh sách ``[(batch, số_lượng_lấy, giá_vốn), ...]`` để lưu vào chi tiết đơn hàng.
     Ném ``OutOfStockError`` nếu tồn kho không đủ.
+
+    Hai lô cùng ngày nhập được xếp theo ``id`` để thứ tự xuất kho luôn xác định,
+    không phụ thuộc cách cơ sở dữ liệu trả về hàng.
     """
     if quantity <= 0:
         raise ValueError("Số lượng xuất kho phải lớn hơn 0.")
@@ -22,7 +24,7 @@ def allocate_stock(product, quantity, *, reference="", user=None, note=""):
     batches = (
         Batch.objects.select_for_update()
         .filter(product=product, quantity_remaining__gt=0)
-        .order_by(F("expiry_date").asc(nulls_last=True), "received_date", "id")
+        .order_by("received_date", "id")
     )
 
     available = sum(b.quantity_remaining for b in batches)

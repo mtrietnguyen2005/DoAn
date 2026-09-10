@@ -217,7 +217,6 @@ CART_SESSION_KEY = "cart"
 DEFAULT_SHIPPING_FEE = config("DEFAULT_SHIPPING_FEE", default=30000, cast=int)
 FREE_SHIPPING_THRESHOLD = config("FREE_SHIPPING_THRESHOLD", default=2000000, cast=int)
 LOW_STOCK_THRESHOLD = config("LOW_STOCK_THRESHOLD", default=10, cast=int)
-EXPIRY_WARNING_DAYS = config("EXPIRY_WARNING_DAYS", default=30, cast=int)
 
 MESSAGE_STORAGE = "django.contrib.messages.storage.session.SessionStorage"
 
