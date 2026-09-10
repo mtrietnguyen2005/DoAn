@@ -33,6 +33,7 @@ class TestProductStock:
     """Tồn kho của sản phẩm phải luôn bằng TỔNG số lượng còn lại của các lô."""
 
     def test_san_pham_chua_co_lo_thi_ton_kho_bang_0(self, product):
+        #0
         assert product.stock_quantity == 0
         assert product.in_stock is False
 
