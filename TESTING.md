@@ -162,8 +162,9 @@ lần push và lưu báo cáo HTML làm artifact.
 | `tests/conftest.py` | **Toàn bộ fixtures dữ liệu mẫu** | — |
 | `tests/unit/test_models.py` | Logic trong tầng Model | 56 |
 | `tests/unit/test_services.py` | Nghiệp vụ kho và đơn hàng | 61 |
-| `tests/unit/test_permissions.py` | Phân quyền Read-only trong Admin | 34 |
-| | **Tổng** | **152** |
+| `tests/unit/test_permissions.py` | Phân quyền Read-only trong Admin | 17 |
+| `tests/unit/test_ai_report.py` | Công cụ AI phân tích log lỗi (Giai đoạn 3) | 51 |
+| | **Tổng** | **185** |
 
 ### Danh sách fixtures (`tests/conftest.py`)
 
@@ -573,7 +574,7 @@ Nếu muốn chạy tách làm hai lượt (ví dụ để chạy phần E2E ri�
 `tools.ai_report` gộp được nhiều tệp kết quả:
 
 ```bash
-pytest --json-report --json-report-file=reports/a.json            # 272 ca không-E2E
+pytest --json-report --json-report-file=reports/a.json            # 270 ca không-E2E
 pytest -m e2e --json-report --json-report-file=reports/b.json     # 37 ca E2E
 python -m tools.ai_report --input reports/a.json reports/b.json
 ```
@@ -668,13 +669,17 @@ pytest --tat-ca --json-report --json-report-file=reports/ket-qua.json
 python -m tools.ai_report
 ```
 
-Kết quả thực tế đã chạy thử: **11 ca thất bại gom thành 8 nhóm**, báo cáo chỉ rõ
-*"8 lỗi MỚI xuất hiện — nhiều khả năng do thay đổi vừa rồi"*. Khôi phục code rồi chạy lại:
-*"−11 ca hỏng · 8 lỗi đã hết"*.
+Kết quả thực tế đã chạy thử: **15 ca thất bại gom thành 9 nhóm**, báo cáo chỉ rõ
+*"9 lỗi MỚI xuất hiện — nhiều khả năng do thay đổi vừa rồi"*. Khôi phục code rồi chạy lại:
+*"−15 ca hỏng · 9 lỗi đã hết"*.
+
+Đáng chú ý là 15 ca hỏng nằm rải ở **cả ba tầng** (unit, integration, e2e) nhưng chỉ
+quy về 9 nhóm — riêng nhóm lớn nhất gom 5 ca cùng một bản chất lỗi. Đây chính là giá
+trị của bước gom nhóm: người đọc báo cáo chỉ phải xem 9 vấn đề thay vì 15 dòng lỗi.
 
 ### Công cụ này cũng được kiểm thử
 
-`tests/unit/test_ai_report.py` — **54 ca**, phủ phần tất định: lọc thông tin nhạy cảm,
+`tests/unit/test_ai_report.py` — **51 ca**, phủ phần tất định: lọc thông tin nhạy cảm,
 đọc kết quả, gom nhóm, so sánh lịch sử, xuất báo cáo, chọn nhà cung cấp AI, xử lý phản
 hồi sai lược đồ và rào chắn bảo mật.
 
