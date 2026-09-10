@@ -46,10 +46,6 @@ class AdminDashboardPage(BasePage):
     def profit_text(self) -> str:
         return self.page.locator("p.text-blue-600").first.inner_text().strip()
 
-    def expiring_batch_codes(self) -> list[str]:
-        return [t.strip() for t in self.page.locator(
-            "h3:has-text('sắp hết hạn') >> xpath=../.. >> tbody a").all_inner_texts()]
-
     def low_stock_skus(self) -> list[str]:
         return [t.strip() for t in self.page.locator(
             "h3:has-text('tồn kho') >> xpath=../.. >> tbody a").all_inner_texts()]
@@ -65,14 +61,12 @@ class AdminBatchPage(BasePage):
         return self.go(self.add_path)
 
     def create_batch(self, *, batch_code, product_sku, quantity, cost_price,
-                     received_date, expiry_date=None):
+                     received_date):
         self.page.fill("input[name='batch_code']", batch_code)
         self._select_autocomplete("product", product_sku)
         self.page.fill("input[name='quantity_in']", str(quantity))
         self.page.fill("input[name='cost_price']", str(cost_price))
         self.page.fill("input[name='received_date']", received_date)
-        if expiry_date:
-            self.page.fill("input[name='expiry_date']", expiry_date)
         self.save()
         return self
 

@@ -214,7 +214,6 @@ class Command(BaseCommand):
                         quantity_remaining=quantity,
                         cost_price=Decimal(int(price * random.uniform(0.72, 0.85))),
                         received_date=today - timedelta(days=random.randint(1, 120)),
-                        expiry_date=today + timedelta(days=random.choice([20, 60, 200, 400, 700])),
                         note="Lô hàng nhập mẫu",
                     )
                     receive_batch(batch, user=admin, note=f"Nhập lô {batch.batch_code}")

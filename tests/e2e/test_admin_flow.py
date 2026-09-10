@@ -3,8 +3,6 @@
 Luồng: Đăng nhập /admin → Thêm lô hàng mới → Duyệt trạng thái đơn
 → Kiểm tra thống kê trên Dashboard.
 """
-from datetime import timedelta
-
 import pytest
 from django.utils import timezone
 from playwright.sync_api import expect
@@ -72,7 +70,6 @@ class TestQuanLyLoHang:
             quantity=25,
             cost_price=950000,
             received_date=today.strftime("%Y-%m-%d"),
-            expiry_date=(today + timedelta(days=365)).strftime("%Y-%m-%d"),
         )
 
         lo_moi = Batch.objects.get(batch_code="LO-MOI-E2E")
@@ -145,7 +142,7 @@ class TestDuyetTrangThaiDonHang:
 
 class TestDashboardThongKe:
     """Độ đúng của số liệu (tổng sản phẩm, đếm theo trạng thái, cảnh báo tồn
-    kho/hết hạn) đã được kiểm thử chi tiết ở tầng tích hợp
+    kho) đã được kiểm thử chi tiết ở tầng tích hợp
     (``tests/integration/test_dashboard.py::TestDashboard``, đọc thẳng
     context trả về, không qua trình duyệt). Ở tầng E2E chỉ giữ lại hai ca:
     xác nhận giao diện thật render đúng, và ca chặn tái phát lỗi SQL Server

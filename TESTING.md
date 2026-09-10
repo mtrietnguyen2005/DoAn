@@ -4,8 +4,8 @@ Bộ kiểm thử được chia làm 3 giai đoạn. **Giai đoạn 1 đã hoàn
 
 | Giai đoạn | Công nghệ | Trạng thái |
 |---|---|---|
-| 1. Unit Test | `pytest` + `pytest-django` | ✅ Hoàn thành — 186 test |
-| 1b. Integration | `pytest-django` (qua HTTP) | ✅ Hoàn thành — 86 test |
+| 1. Unit Test | `pytest` + `pytest-django` | ✅ Hoàn thành — 185 test |
+| 1b. Integration | `pytest-django` (qua HTTP) | ✅ Hoàn thành — 85 test |
 | 2. E2E Test | `pytest-playwright` (Page Object Model) | ✅ Hoàn thành — 37 test |
 | 3. AI phân tích log lỗi | DeepSeek API + Pydantic | ✅ Hoàn thành (thay cho phương án Postman ban đầu, xem mục *Giai đoạn 3*) |
 
@@ -45,7 +45,7 @@ pytest -n auto                              # chạy song song cho nhanh
 Bộ test dùng cấu hình riêng `config/settings_test.py`, **mặc định chạy SQLite ghi ra tệp
 `.pytest-db.sqlite3`** bất kể `.env` của bạn đặt `DB_ENGINE` là gì. Lý do:
 
-* Nhanh (272 test không-E2E chạy trong ~6 giây)
+* Nhanh (270 test không-E2E chạy trong ~6 giây)
 * Không đụng tới database thật
 * Ai clone dự án về cũng chạy được ngay, không cần cài SQL Server
 
@@ -54,7 +54,7 @@ WSGI đa luồng. Với SQLite trong bộ nhớ, Django buộc mọi luồng x�
 **một** connection duy nhất (`LiveServerThread.connections_override`). Hai request đồng thời
 — chuyện xảy ra thường xuyên ở trang admin, vừa tải HTML vừa gọi autocomplete — khoá nhau
 vĩnh viễn trên connection đó, và lần chạy `pytest --tat-ca` **đứng im chứ không báo lỗi**.
-Dùng CSDL dạng tệp thì mỗi luồng mở connection riêng, hết tranh chấp: 309 test chạy trọn
+Dùng CSDL dạng tệp thì mỗi luồng mở connection riêng, hết tranh chấp: 307 test chạy trọn
 trong ~65 giây. Cái giá phải trả chỉ là 0,3 giây chậm hơn ở phần không-E2E.
 
 ### ⚠️ Chạy test trên SQL Server trước khi nộp
@@ -95,12 +95,12 @@ TEST_ON_MSSQL=True pytest
 
 ## Tích hợp liên tục (CI)
 
-`.github/workflows/ci.yml` tự động chạy toàn bộ 309 test trên GitHub Actions ở
+`.github/workflows/ci.yml` tự động chạy toàn bộ 307 test trên GitHub Actions ở
 mỗi lần push và mỗi pull request, tách thành hai job chạy song song:
 
 | Job | Chạy gì | Vì sao tách riêng |
 |---|---|---|
-| `unit-integration` | 272 ca không cần trình duyệt | Chạy trong vài giây, thất bại sớm phát hiện lỗi logic ngay |
+| `unit-integration` | 270 ca không cần trình duyệt | Chạy trong vài giây, thất bại sớm phát hiện lỗi logic ngay |
 | `e2e` | 37 ca Playwright, tự cài Chromium bằng `playwright install --with-deps` | Chậm hơn (~1 phút), tách riêng để không làm job kia chờ |
 
 Cả hai job **không cần `.env`, không cần SQL Server** — `config/settings_test.py`
@@ -128,11 +128,11 @@ coverage report
 coverage html -d reports/coverage_html
 ```
 
-Kết quả đo được (309 test, `apps/` — loại `migrations/`, `tests/`,
+Kết quả đo được (307 test, `apps/` — loại `migrations/`, `tests/`,
 `manage.py` và `seed_data.py` vì đây là script chèn dữ liệu mẫu, không phải
 logic nghiệp vụ):
 
-**88,2%** (1.743 dòng lệnh + 248 nhánh rẽ, 166 dòng và 66 nhánh chưa chạm tới).
+**88,1%** (1.717 dòng lệnh + 240 nhánh rẽ, 165 dòng và 37 nhánh chưa chạm tới).
 
 Phần chưa phủ tập trung ở: `core/templatetags/shop_extras.py` (40%, các hàm
 định dạng hiển thị ít nhánh rẽ được test riêng), `accounts/backends.py`
@@ -160,7 +160,7 @@ lần push và lưu báo cáo HTML làm artifact.
 | `config/settings_test.py` | Cấu hình riêng khi test (mặc định SQLite ghi ra tệp) | — |
 | `requirements-dev.txt` | Thư viện phục vụ kiểm thử | — |
 | `tests/conftest.py` | **Toàn bộ fixtures dữ liệu mẫu** | — |
-| `tests/unit/test_models.py` | Logic trong tầng Model | 57 |
+| `tests/unit/test_models.py` | Logic trong tầng Model | 56 |
 | `tests/unit/test_services.py` | Nghiệp vụ kho và đơn hàng | 61 |
 | `tests/unit/test_permissions.py` | Phân quyền Read-only trong Admin | 34 |
 | | **Tổng** | **152** |
@@ -199,12 +199,12 @@ lần push và lưu báo cáo HTML làm artifact.
 | Fixture | Mô tả |
 |---|---|
 | `batch_factory` | Hàm tạo lô hàng tuỳ ý |
-| `batch_early` | Lô `LO-SOM`: hạn 10 ngày, **4 sản phẩm**, giá vốn 1.000.000đ → phải xuất trước |
-| `batch_late` | Lô `LO-MUON`: hạn 200 ngày, **10 sản phẩm**, giá vốn 1.200.000đ |
+| `batch_early` | Lô `LO-SOM`: nhập 30 ngày trước, **4 sản phẩm**, giá vốn 1.000.000đ → phải xuất trước |
+| `batch_late` | Lô `LO-MUON`: nhập 5 ngày trước, **10 sản phẩm**, giá vốn 1.200.000đ |
 | `product_with_batches` | Sản phẩm có tổng tồn kho **14** từ hai lô trên |
 
 > Hai lô cố tình đặt **giá vốn khác nhau** để kiểm chứng công thức giá vốn bình quân gia quyền,
-> và **hạn sử dụng khác nhau** để kiểm chứng thứ tự xuất kho FIFO.
+> và **ngày nhập kho khác nhau** để kiểm chứng thứ tự xuất kho FIFO.
 
 **Mã giảm giá**
 
@@ -236,7 +236,7 @@ migrate lại từ đầu. **Khi đổi model, bắt buộc chạy `pytest --cre
 
 **Logic kho**
 - Tồn kho = tổng số lượng còn lại của tất cả lô
-- Xuất kho FIFO: ưu tiên lô hết hạn sớm nhất, lô không có hạn xuất sau cùng
+- Xuất kho FIFO: ưu tiên lô có ngày nhập kho sớm nhất, cùng ngày thì lô tạo trước xuất trước
 - Lấy tràn sang lô kế tiếp khi lô đầu không đủ
 - Ghi vết mọi giao dịch: nhập / xuất / hoàn trả / điều chỉnh, kèm tồn sau giao dịch và người thực hiện
 - **Hoàn trả về đúng lô ban đầu khi huỷ đơn** (không dồn sang lô khác)
@@ -262,11 +262,11 @@ migrate lại từ đầu. **Khi đổi model, bắt buộc chạy `pytest --cre
 ### Tổng số test
 
 ```
-Unit          186    (tests/unit/)
-Integration    86    (tests/integration/)
+Unit          185    (tests/unit/)
+Integration    85    (tests/integration/)
 E2E            37    (tests/e2e/)
              -----
-TỔNG          309
+TỔNG          307
 ```
 
 ### Độ bao phủ logic nghiệp vụ cốt lõi
@@ -434,7 +434,7 @@ def test_huy_don_hop_le_va_hoan_kho(self, ...):
 - **Duyệt trạng thái đơn: Chờ xác nhận → Đã xác nhận → Đang giao → Hoàn thành**
 - Admin huỷ đơn → kho hoàn về đúng lô
 - **Dashboard: 4 thẻ thống kê khớp database, đếm đơn theo trạng thái,
-  cảnh báo lô sắp hết hạn và sản phẩm sắp hết tồn kho**
+  cảnh báo sản phẩm sắp hết tồn kho**
 - Phân quyền read-only hiển thị đúng trên giao diện (không có nút Thêm)
 
 ### Yêu cầu kỹ thuật đã đáp ứng
@@ -523,7 +523,7 @@ Giờ chỉ còn một lệnh duy nhất: `pytest`.
 | Tài liệu | Nội dung |
 |---|---|
 | [docs/BAO-VE-DO-AN.md](docs/BAO-VE-DO-AN.md) | Kim tự tháp kiểm thử, nghiệp vụ được kiểm thử, 11 lỗi phát hiện được, câu hỏi phản biện |
-| [docs/DANH-MUC-TEST-CASE.md](docs/DANH-MUC-TEST-CASE.md) | Bảng chi tiết toàn bộ 309 ca |
+| [docs/DANH-MUC-TEST-CASE.md](docs/DANH-MUC-TEST-CASE.md) | Bảng chi tiết toàn bộ 307 ca |
 | [docs/CHIEN-LUOC-BAT-ELEMENT.md](docs/CHIEN-LUOC-BAT-ELEMENT.md) | Cách định vị phần tử, 3 bẫy đã gặp thật, auto-waiting, Page Object Model |
 
 > Danh mục test case là ảnh chụp thủ công tại thời điểm viết (tên, mô tả lấy
@@ -663,7 +663,7 @@ mới có ý nghĩa.
 
 ```bash
 # Cố tình phá logic FIFO trong apps/inventory/services.py:
-#   .order_by(F("expiry_date").asc(...))  →  .desc(...)
+#   .order_by("received_date", "id")  →  .order_by("-received_date", "-id")
 pytest --tat-ca --json-report --json-report-file=reports/ket-qua.json
 python -m tools.ai_report
 ```

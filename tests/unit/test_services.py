@@ -32,9 +32,9 @@ pytestmark = pytest.mark.django_db
 @pytest.mark.unit
 @pytest.mark.inventory
 class TestAllocateStock:
-    """``allocate_stock`` phải lấy hàng từ lô hết hạn sớm nhất trước."""
+    """``allocate_stock`` phải lấy hàng từ lô nhập kho sớm nhất trước."""
 
-    def test_uu_tien_lo_co_han_su_dung_som_nhat(self, product_with_batches, batch_early):
+    def test_uu_tien_lo_nhap_kho_som_nhat(self, product_with_batches, batch_early):
         allocations = allocate_stock(product_with_batches, 3, reference="TEST")
 
         assert len(allocations) == 1
@@ -61,15 +61,21 @@ class TestAllocateStock:
         assert batch_early.quantity_remaining == 0
         assert batch_late.quantity_remaining == 8
 
-    def test_lo_khong_co_han_su_dung_duoc_xuat_sau_cung(self, product, batch_factory):
-        khong_han = batch_factory(product, quantity=5, cost_price=900000, batch_code="LO-KHONGHAN")
-        co_han = batch_factory(product, quantity=5, cost_price=1100000,
-                               expiry_in_days=30, batch_code="LO-COHAN")
+    def test_hai_lo_cung_ngay_nhap_xep_theo_id(self, product, batch_factory):
+        """Cùng ngày nhập thì lô tạo trước (id nhỏ hơn) được xuất trước.
+
+        Ràng buộc này giữ cho thứ tự xuất kho luôn xác định, không phụ thuộc
+        vào cách cơ sở dữ liệu trả về hàng.
+        """
+        lo_truoc = batch_factory(product, quantity=5, cost_price=900000,
+                                 received_days_ago=7, batch_code="LO-A")
+        lo_sau = batch_factory(product, quantity=5, cost_price=1100000,
+                               received_days_ago=7, batch_code="LO-B")
 
         allocations = allocate_stock(product, 5, reference="TEST")
-        assert allocations[0][0].pk == co_han.pk
-        khong_han.refresh_from_db()
-        assert khong_han.quantity_remaining == 5
+        assert allocations[0][0].pk == lo_truoc.pk
+        lo_sau.refresh_from_db()
+        assert lo_sau.quantity_remaining == 5
 
     def test_bao_loi_khi_ton_kho_khong_du(self, product_with_batches):
         with pytest.raises(OutOfStockError) as exc:

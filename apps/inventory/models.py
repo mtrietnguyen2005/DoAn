@@ -23,17 +23,13 @@ class Batch(models.Model):
     )
     received_date = models.DateField("Ngày nhập kho", default=timezone.localdate)
     manufacture_date = models.DateField("Ngày sản xuất", null=True, blank=True)
-    expiry_date = models.DateField(
-        "Hạn sử dụng / hết bảo hành lô", null=True, blank=True,
-        help_text="Dùng để cảnh báo lô hàng sắp hết hạn",
-    )
     note = models.CharField("Ghi chú", max_length=255, blank=True)
     created_at = models.DateTimeField("Ngày tạo", auto_now_add=True)
 
     class Meta:
         verbose_name = "Lô hàng"
         verbose_name_plural = "Lô hàng"
-        ordering = ["expiry_date", "received_date", "id"]
+        ordering = ["received_date", "id"]
         indexes = [models.Index(fields=["product", "quantity_remaining"])]
 
     def __str__(self):
@@ -42,22 +38,12 @@ class Batch(models.Model):
     def clean(self):
         if self.quantity_remaining > self.quantity_in:
             raise ValidationError({"quantity_remaining": "Số lượng còn lại không được lớn hơn số lượng nhập."})
-        if self.expiry_date and self.manufacture_date and self.expiry_date < self.manufacture_date:
-            raise ValidationError({"expiry_date": "Hạn sử dụng phải sau ngày sản xuất."})
+        if self.manufacture_date and self.manufacture_date > self.received_date:
+            raise ValidationError({"manufacture_date": "Ngày sản xuất không được sau ngày nhập kho."})
 
     @property
     def quantity_sold(self):
         return self.quantity_in - self.quantity_remaining
-
-    @property
-    def is_expired(self):
-        return bool(self.expiry_date and self.expiry_date < timezone.localdate())
-
-    @property
-    def days_to_expiry(self):
-        if not self.expiry_date:
-            return None
-        return (self.expiry_date - timezone.localdate()).days
 
     @property
     def total_cost(self):

@@ -70,20 +70,14 @@ class TestBatchModel:
         # 4 sản phẩm × 1.000.000đ
         assert batch_early.total_cost == Decimal(4000000)
 
-    def test_so_ngay_con_lai_den_han(self, batch_early):
-        assert batch_early.days_to_expiry == 10
-        assert batch_early.is_expired is False
-
-    def test_nhan_biet_lo_da_het_han(self, product, batch_factory):
-        expired = batch_factory(product, expiry_in_days=-5)
-        assert expired.is_expired is True
-        assert expired.days_to_expiry == -5
-
-    def test_lo_khong_co_han_su_dung(self, product, batch_factory):
+    def test_ngay_nhap_kho_mac_dinh_la_hom_nay(self, product, batch_factory, today):
         batch = batch_factory(product)
-        assert batch.expiry_date is None
-        assert batch.days_to_expiry is None
-        assert batch.is_expired is False
+        assert batch.received_date == today
+
+    def test_thu_tu_mac_dinh_theo_ngay_nhap_kho(self, product, batch_early, batch_late):
+        """Meta.ordering xếp lô nhập trước lên đầu — nền tảng của FIFO."""
+        ma_lo = list(product.batches.values_list("batch_code", flat=True))
+        assert ma_lo == ["LO-SOM", "LO-MUON"]
 
     def test_khong_cho_so_luong_con_lai_lon_hon_so_luong_nhap(self, product):
         batch = Batch(product=product, batch_code="LOI01", quantity_in=5,
@@ -92,15 +86,15 @@ class TestBatchModel:
             batch.full_clean()
         assert "quantity_remaining" in exc.value.message_dict
 
-    def test_khong_cho_han_su_dung_truoc_ngay_san_xuat(self, product, today):
+    def test_khong_cho_ngay_san_xuat_sau_ngay_nhap_kho(self, product, today):
         batch = Batch(
             product=product, batch_code="LOI02", quantity_in=5, quantity_remaining=5,
             cost_price=Decimal(1000),
-            manufacture_date=today, expiry_date=today - timedelta(days=1),
+            received_date=today, manufacture_date=today + timedelta(days=1),
         )
         with pytest.raises(ValidationError) as exc:
             batch.full_clean()
-        assert "expiry_date" in exc.value.message_dict
+        assert "manufacture_date" in exc.value.message_dict
 
     def test_ma_lo_phai_la_duy_nhat(self, product, batch_early):
         with pytest.raises(IntegrityError):

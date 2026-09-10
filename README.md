@@ -55,13 +55,13 @@ DoAn/
 
 ### 3.2. Quản trị viên — `/admin`
 - Quản lý toàn bộ model: User, Address, Product, Category, Brand, Supplier, Batch, StockTransaction, Order, OrderItem, Shipping, PromoCode, News, Banner, Promotion.
-- **Dashboard**: tổng số User / Sản phẩm / Đơn hàng / Đánh giá, doanh thu và lợi nhuận tháng, đơn hàng theo trạng thái, **danh sách lô hàng sắp hết hạn** và **sản phẩm sắp hết tồn kho**.
+- **Dashboard**: tổng số User / Sản phẩm / Đơn hàng / Đánh giá, doanh thu và lợi nhuận tháng, đơn hàng theo trạng thái, **danh sách sản phẩm sắp hết tồn kho**.
 - Đổi trạng thái đơn hàng ngay trên trang admin (kể cả hàng loạt) — luôn đi qua service để ghi lịch sử và hoàn kho.
 - **Phân quyền chỉ đọc (read-only)** với Admin thường ở 3 resource: **Địa chỉ người dùng**, **Đánh giá**, **Giao dịch kho**. Chỉ superuser mới được thêm/sửa/xóa.
 
 ### 3.3. Logic kho & đơn hàng (phần cốt lõi)
 - **Tồn kho theo lô** (`Batch`): tồn kho sản phẩm = tổng số lượng còn lại của tất cả lô.
-- **Xuất kho FIFO**: ưu tiên lô có hạn sử dụng sớm nhất, sau đó đến ngày nhập kho.
+- **Xuất kho FIFO**: ưu tiên lô có ngày nhập kho sớm nhất, cùng ngày thì theo thứ tự tạo lô.
 - **Sổ nhật ký kho** (`StockTransaction`): ghi vết mọi giao dịch Nhập / Xuất / Hoàn trả / Điều chỉnh thủ công, kèm tồn kho sau giao dịch và người thực hiện.
 - **Lưu giá vốn (COGS)** vào `OrderItem.cost_price` tại thời điểm bán (bình quân gia quyền khi lấy từ nhiều lô) → tính lợi nhuận chính xác kể cả khi giá nhập thay đổi sau này.
 - **Bảng phân bổ lô** (`OrderItemBatch`) ghi rõ mỗi dòng hàng lấy bao nhiêu từ lô nào → khi hủy đơn, số lượng được **hoàn trả về đúng lô ban đầu**, không dồn vào một lô.
@@ -100,16 +100,16 @@ Xem tài liệu đầy đủ ở **[TESTING.md](TESTING.md)**.
 pip install -r requirements-dev.txt
 playwright install chromium   # chỉ cần cho E2E, chạy một lần
 
-pytest                        # 272 test Unit + Integration (~6 giây)
+pytest                        # 270 test Unit + Integration (~6 giây)
 pytest -m e2e                 # 37 test E2E bằng trình duyệt thật (~50 giây)
-pytest --tat-ca               # tất cả 309 test
+pytest --tat-ca               # tất cả 307 test
 coverage run -m pytest --tat-ca && coverage report   # kèm báo cáo độ bao phủ
 ```
 
 | Loại | Số test | Phạm vi |
 |---|---|---|
-| Unit | 186 | Logic model và service: FIFO, hoàn kho đúng lô, COGS, mã giảm giá, phân quyền |
-| Integration | 86 | Qua HTTP: đăng ký/đăng nhập, lọc sản phẩm, giỏ hàng, đặt hàng, dashboard |
+| Unit | 185 | Logic model và service: FIFO, hoàn kho đúng lô, COGS, mã giảm giá, phân quyền |
+| Integration | 85 | Qua HTTP: đăng ký/đăng nhập, lọc sản phẩm, giỏ hàng, đặt hàng, dashboard |
 | E2E | 37 | Trình duyệt thật (Playwright + Page Object Model): luồng khách hàng và quản trị |
 
-Bao phủ **88,2%** mã nguồn `apps/` (`orders/services.py` đạt 97,4%). Chi tiết ở [TESTING.md](TESTING.md#độ-phủ-code-coverage).
+Bao phủ **88,1%** mã nguồn `apps/` (`orders/services.py` đạt 97,4%). Chi tiết ở [TESTING.md](TESTING.md#độ-phủ-code-coverage).

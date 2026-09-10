@@ -1,6 +1,4 @@
 """Dữ liệu cho trang Bảng điều khiển của Admin (django-unfold DASHBOARD_CALLBACK)."""
-from datetime import timedelta
-
 from django.conf import settings
 from django.db.models import Count, F, Sum
 from django.db.models.functions import Coalesce
@@ -8,14 +6,12 @@ from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.catalog.models import Product, Review
-from apps.inventory.models import Batch
 from apps.orders.models import Order, OrderItem
 
 
 def dashboard_callback(request, context):
     today = timezone.localdate()
     month_start = today.replace(day=1)
-    warning_date = today + timedelta(days=settings.EXPIRY_WARNING_DAYS)
 
     # Lưu ý: luôn gọi .order_by() trước khi gom nhóm/tổng hợp.
     # SQL Server từ chối câu lệnh có ORDER BY trên cột không nằm trong GROUP BY,
@@ -30,13 +26,6 @@ def dashboard_callback(request, context):
         .order_by()
         .aggregate(s=Sum(F("cost_price") * F("quantity")))["s"]
         or 0
-    )
-
-    # Lô hàng sắp hết hạn
-    expiring_batches = (
-        Batch.objects.select_related("product")
-        .filter(quantity_remaining__gt=0, expiry_date__isnull=False, expiry_date__lte=warning_date)
-        .order_by("expiry_date", "id")[:10]
     )
 
     # Sản phẩm sắp hết / đã hết tồn kho
@@ -69,10 +58,8 @@ def dashboard_callback(request, context):
             {"label": label, "value": status_counts.get(value, 0), "code": value}
             for value, label in Order.Status.choices
         ],
-        "expiring_batches": expiring_batches,
         "low_stock_products": low_stock_products,
         "recent_orders": Order.objects.select_related("user").order_by("-created_at", "-id")[:8],
-        "expiry_warning_days": settings.EXPIRY_WARNING_DAYS,
         "low_stock_threshold": settings.LOW_STOCK_THRESHOLD,
     })
     return context

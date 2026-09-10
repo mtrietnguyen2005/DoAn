@@ -1,8 +1,6 @@
 from django.contrib import admin, messages
-from django.utils import timezone
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin
-from unfold.decorators import display
 
 from apps.core.admin_mixins import ReadOnlyForStaffMixin
 
@@ -14,9 +12,9 @@ from .services import receive_batch
 class BatchAdmin(ModelAdmin):
     list_display = (
         "batch_code", "product", "supplier", "quantity_in", "quantity_remaining",
-        "cost_price_display", "received_date", "expiry_status",
+        "cost_price_display", "received_date",
     )
-    list_filter = ("supplier", "received_date", "expiry_date", "product__category")
+    list_filter = ("supplier", "received_date", "product__category")
     search_fields = ("batch_code", "product__name", "product__sku", "note")
     autocomplete_fields = ("product", "supplier")
     date_hierarchy = "received_date"
@@ -35,17 +33,6 @@ class BatchAdmin(ModelAdmin):
     @admin.display(description="Giá vốn", ordering="cost_price")
     def cost_price_display(self, obj):
         return f"{obj.cost_price:,.0f}đ"
-
-    @display(description="Hạn sử dụng")
-    def expiry_status(self, obj):
-        if not obj.expiry_date:
-            return "—"
-        days = obj.days_to_expiry
-        if days < 0:
-            return format_html('<span style="color:#dc2626;font-weight:600">Đã hết hạn</span>')
-        if days <= 30:
-            return format_html('<span style="color:#f59e0b;font-weight:600">Còn {} ngày</span>', days)
-        return format_html('<span style="color:#16a34a">{}</span>', obj.expiry_date.strftime("%d/%m/%Y"))
 
 
 @admin.register(StockTransaction)
