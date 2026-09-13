@@ -1,10 +1,3 @@
-"""GIAI ĐOẠN 2 — Kịch bản E2E luồng khách hàng.
-
-Luồng đầy đủ: Đăng ký → Đăng nhập → Lọc sản phẩm → Thêm giỏ hàng
-→ Đặt hàng → Xem lịch sử → Huỷ đơn hợp lệ.
-
-Toàn bộ thao tác đi qua Page Object, không có selector rải rác trong test.
-"""
 import pytest
 from playwright.sync_api import expect
 
@@ -22,7 +15,6 @@ class TestDangKyVaDangNhap:
             password="MatKhauManh!23", last_name="Trần", first_name="Bình",
             phone="0987654321",
         )
-        # Đăng ký xong được đăng nhập luôn và chuyển về trang chủ
         expect(register_page.page).to_have_url(register_page.base_url + "/")
         register_page.expect_text_visible("Trần Bình")
 
@@ -45,10 +37,6 @@ class TestDangKyVaDangNhap:
 
 
 class TestTimKiemVaLocSanPham:
-    """Logic lọc/sắp xếp đã được kiểm thử đầy đủ ở tầng tích hợp
-    (``tests/integration/test_catalog_views.py::TestLocSanPham``, 8 ca qua
-    HTTP trực tiếp). Ở tầng E2E chỉ cần xác nhận một lượt tìm kiếm đại diện
-    hoạt động đúng qua giao diện thật, không lặp lại toàn bộ ma trận lọc."""
 
     def test_hien_thi_toan_bo_san_pham(self, product_list_page, shop_data):
         product_list_page.go().expect_product_count(3)
@@ -89,7 +77,6 @@ class TestGioHang:
     def test_ap_dung_ma_giam_gia(self, page, site_url, cart_page, shop_data):
         from .pages.product_pages import ProductDetailPage
 
-        # Mua 2 sản phẩm 1.5 triệu = 3 triệu, giảm 10% = 300.000đ
         ProductDetailPage(page, site_url, slug=shop_data["product"].slug).go() \
             .set_quantity(2).add_to_cart()
         cart_page.go().apply_promo("GIAM10").expect_discount_contains("300.000")
@@ -100,7 +87,6 @@ class TestGioHang:
 
 
 class TestDatHangVaHuyDon:
-    """Kịch bản trọng tâm: đặt hàng thật rồi huỷ, kiểm tra hoàn kho."""
 
     def _dat_hang(self, page, site_url, cart_page, shop_data, quantity=2):
         from .pages.product_pages import ProductDetailPage
@@ -130,13 +116,12 @@ class TestDatHangVaHuyDon:
 
     def test_dat_hang_lam_giam_ton_kho_dung_lo(self, page, site_url, cart_page,
                                                shop_data, logged_in_customer):
-        """Lô nhập kho sớm phải bị trừ trước (FIFO)."""
         self._dat_hang(page, site_url, cart_page, shop_data, quantity=2)
 
         shop_data["batch_early"].refresh_from_db()
         shop_data["batch_late"].refresh_from_db()
-        assert shop_data["batch_early"].quantity_remaining == 2   # 4 - 2
-        assert shop_data["batch_late"].quantity_remaining == 10   # chưa đụng tới
+        assert shop_data["batch_early"].quantity_remaining == 2
+        assert shop_data["batch_late"].quantity_remaining == 10
 
     def test_gio_hang_duoc_xoa_sau_khi_dat(self, page, site_url, cart_page,
                                            shop_data, logged_in_customer):
@@ -161,7 +146,6 @@ class TestDatHangVaHuyDon:
 
     def test_huy_don_hop_le_va_hoan_kho(self, page, site_url, cart_page,
                                         shop_data, logged_in_customer):
-        """Huỷ đơn ở trạng thái Chờ xác nhận: được phép, và kho phải hoàn đúng lô."""
         success = self._dat_hang(page, site_url, cart_page, shop_data, quantity=2)
         code = success.order_code()
 
@@ -174,7 +158,6 @@ class TestDatHangVaHuyDon:
         detail.cancel_order("Đổi ý không mua nữa")
         detail.expect_cancelled()
 
-        # Kho được hoàn về đúng lô ban đầu
         shop_data["batch_early"].refresh_from_db()
         shop_data["batch_late"].refresh_from_db()
         assert shop_data["batch_early"].quantity_remaining == 4

@@ -1,23 +1,14 @@
-"""Nghiệp vụ kho: phân bổ tồn kho theo lô (FIFO) và hoàn trả về đúng lô ban đầu."""
 from django.db import transaction
 
 from .models import Batch, StockTransaction
 
 
 class OutOfStockError(Exception):
-    """Không đủ tồn kho để xuất hàng."""
+    pass
 
 
 @transaction.atomic
 def allocate_stock(product, quantity, *, reference="", user=None, note=""):
-    """Trừ tồn kho của ``product`` theo nguyên tắc FIFO (lô nhập kho trước xuất trước).
-
-    Trả về danh sách ``[(batch, số_lượng_lấy, giá_vốn), ...]`` để lưu vào chi tiết đơn hàng.
-    Ném ``OutOfStockError`` nếu tồn kho không đủ.
-
-    Hai lô cùng ngày nhập được xếp theo ``id`` để thứ tự xuất kho luôn xác định,
-    không phụ thuộc cách cơ sở dữ liệu trả về hàng.
-    """
     if quantity <= 0:
         raise ValueError("Số lượng xuất kho phải lớn hơn 0.")
 
@@ -58,7 +49,6 @@ def allocate_stock(product, quantity, *, reference="", user=None, note=""):
 
 @transaction.atomic
 def return_stock(batch, quantity, *, reference="", user=None, note=""):
-    """Hoàn trả ``quantity`` sản phẩm về đúng ``batch`` ban đầu."""
     if quantity <= 0:
         return
     locked = Batch.objects.select_for_update().get(pk=batch.pk)
@@ -82,7 +72,6 @@ def return_stock(batch, quantity, *, reference="", user=None, note=""):
 
 @transaction.atomic
 def receive_batch(batch, *, user=None, note=""):
-    """Ghi nhận giao dịch nhập kho cho một lô hàng mới tạo."""
     locked = Batch.objects.select_for_update().get(pk=batch.pk)
     StockTransaction.objects.create(
         batch=locked,
@@ -98,7 +87,6 @@ def receive_batch(batch, *, user=None, note=""):
 
 @transaction.atomic
 def adjust_batch(batch, new_quantity, *, user=None, note=""):
-    """Điều chỉnh thủ công tồn kho của một lô và ghi vết giao dịch."""
     locked = Batch.objects.select_for_update().get(pk=batch.pk)
     delta = new_quantity - locked.quantity_remaining
     if delta == 0:

@@ -10,7 +10,6 @@ from apps.inventory.models import Batch
 
 
 class PromoCode(models.Model):
-    """Mã giảm giá áp dụng cho đơn hàng."""
 
     class DiscountType(models.TextChoices):
         PERCENT = "percent", "Giảm theo phần trăm"
@@ -54,7 +53,6 @@ class PromoCode(models.Model):
         return self.usage_limit == 0 or self.used_count < self.usage_limit
 
     def error_for(self, subtotal):
-        """Trả về thông báo lỗi nếu mã không dùng được, ngược lại trả về None."""
         now = timezone.now()
         if not self.is_active:
             return "Mã giảm giá đã bị vô hiệu hóa."
@@ -80,7 +78,6 @@ class PromoCode(models.Model):
 
 
 class Order(models.Model):
-    """Đơn hàng của khách."""
 
     class Status(models.TextChoices):
         PENDING = "pending", "Chờ xác nhận"
@@ -92,9 +89,7 @@ class Order(models.Model):
     class PaymentMethod(models.TextChoices):
         COD = "cod", "Thanh toán khi nhận hàng (COD)"
 
-    # Trạng thái khách hàng còn được phép hủy đơn
     CANCELLABLE_STATUSES = {Status.PENDING, Status.CONFIRMED}
-    # Trạng thái mà tồn kho đã bị trừ (cần hoàn trả khi hủy)
     STOCK_DEDUCTED_STATUSES = {Status.PENDING, Status.CONFIRMED, Status.SHIPPING, Status.COMPLETED}
 
     code = models.CharField("Mã đơn hàng", max_length=30, unique=True, blank=True)
@@ -103,7 +98,6 @@ class Order(models.Model):
         related_name="orders", verbose_name="Khách hàng",
     )
 
-    # Thông tin người nhận (chụp lại tại thời điểm đặt hàng)
     receiver_name = models.CharField("Họ tên người nhận", max_length=120)
     receiver_phone = models.CharField("Số điện thoại", max_length=20)
     receiver_email = models.EmailField("Email", blank=True)
@@ -149,7 +143,6 @@ class Order(models.Model):
             self.code = f"DH{timezone.localtime(self.created_at):%y%m%d}{self.pk:05d}"
             super().save(update_fields=["code"])
 
-    # ---- Nghiệp vụ ----
     @property
     def can_cancel(self):
         return self.status in self.CANCELLABLE_STATUSES
@@ -160,12 +153,10 @@ class Order(models.Model):
 
     @property
     def total_cost(self):
-        """Tổng giá vốn (COGS) của đơn hàng."""
         return sum(item.cost_price * item.quantity for item in self.items.all())
 
     @property
     def profit(self):
-        """Lợi nhuận gộp = doanh thu hàng hoá - giá vốn - giảm giá."""
         return self.subtotal - self.total_cost - self.discount_amount
 
     @property
@@ -180,7 +171,6 @@ class Order(models.Model):
 
 
 class OrderItem(models.Model):
-    """Chi tiết đơn hàng. Lưu giá bán và giá vốn tại thời điểm bán."""
 
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items", verbose_name="Đơn hàng")
     product = models.ForeignKey(
@@ -216,7 +206,6 @@ class OrderItem(models.Model):
 
 
 class OrderItemBatch(models.Model):
-    """Ghi nhận số lượng lấy từ từng lô, phục vụ hoàn kho đúng lô khi hủy đơn."""
 
     order_item = models.ForeignKey(
         OrderItem, on_delete=models.CASCADE, related_name="batch_allocations", verbose_name="Chi tiết đơn"
@@ -237,7 +226,6 @@ class OrderItemBatch(models.Model):
 
 
 class OrderStatusHistory(models.Model):
-    """Lịch sử thay đổi trạng thái đơn hàng."""
 
     order = models.ForeignKey(
         Order, on_delete=models.CASCADE, related_name="status_history", verbose_name="Đơn hàng"
@@ -261,7 +249,6 @@ class OrderStatusHistory(models.Model):
 
 
 class Shipping(models.Model):
-    """Thông tin giao hàng của đơn."""
 
     class Carrier(models.TextChoices):
         GHTK = "ghtk", "Giao Hàng Tiết Kiệm"

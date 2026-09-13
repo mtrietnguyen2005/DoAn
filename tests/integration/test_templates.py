@@ -1,4 +1,3 @@
-"""Kiểm thử chất lượng template: không để lộ mã nguồn ra trang web."""
 import re
 from pathlib import Path
 
@@ -8,7 +7,6 @@ from django.urls import reverse
 
 pytestmark = pytest.mark.django_db
 
-#: Dấu hiệu template bị lỗi và in mã nguồn ra màn hình
 DAU_HIEU_LOI = ("{#", "#}", "{%", "%}", "{{", "}}")
 
 TEMPLATE_DIR = Path(settings.BASE_DIR) / "templates"
@@ -16,12 +14,6 @@ TEMPLATE_DIR = Path(settings.BASE_DIR) / "templates"
 
 @pytest.mark.integration
 class TestGhiChuTemplate:
-    """Django chỉ hỗ trợ ``{# ... #}`` trên MỘT dòng.
-
-    Ghi chú trải nhiều dòng sẽ không được coi là ghi chú mà in thẳng ra
-    trang web dưới dạng văn bản. Ghi chú nhiều dòng phải dùng
-    ``{% comment %} ... {% endcomment %}``.
-    """
 
     def test_khong_co_ghi_chu_mot_dau_trai_nhieu_dong(self):
         loi = []
@@ -40,11 +32,9 @@ class TestGhiChuTemplate:
 
 @pytest.mark.integration
 class TestTrangKhongLoMaNguon:
-    """Mọi trang render ra phải sạch, không còn cú pháp template."""
 
     def _kiem_tra(self, response, ten_trang):
         html = response.content.decode()
-        # Bỏ qua phần <script> vì JavaScript có thể dùng dấu ngoặc nhọn
         khong_script = re.sub(r"<script.*?</script>", "", html, flags=re.S)
         for dau_hieu in DAU_HIEU_LOI:
             assert dau_hieu not in khong_script, (

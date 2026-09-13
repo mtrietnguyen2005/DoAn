@@ -1,4 +1,3 @@
-"""Lưu lịch sử các lần chạy để so sánh xu hướng giữa hai lần liên tiếp."""
 from __future__ import annotations
 
 import json
@@ -15,22 +14,18 @@ def _doc(duong_dan: Path) -> list[dict]:
     try:
         return json.loads(duong_dan.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
-        return []   # tệp hỏng thì bỏ qua, không làm gãy cả quy trình
+        return []
 
 
 def lan_truoc(duong_dan: Path = TEP_LICH_SU) -> dict | None:
-    """Lần chạy gần nhất đã lưu, hoặc None nếu đây là lần đầu."""
     lich_su = _doc(duong_dan)
     return lich_su[-1] if lich_su else None
 
 
 def ghi_nhan(tom_tat: dict, van_tay_loi: list[str],
              duong_dan: Path = TEP_LICH_SU) -> None:
-    """Ghi lại lần chạy hiện tại, chỉ giữ SO_LAN_LUU lần gần nhất."""
     lich_su = _doc(duong_dan)
     lich_su.append({
-        # Trải tom_tat TRƯỚC: nó cũng có khoá "thoi_diem" (dấu thời gian thô của
-        # pytest). Đặt sau sẽ bị ghi đè và báo cáo hiện số epoch khó đọc.
         **tom_tat,
         "thoi_diem": datetime.now().isoformat(timespec="seconds"),
         "van_tay_loi": sorted(van_tay_loi),
@@ -44,10 +39,6 @@ def ghi_nhan(tom_tat: dict, van_tay_loi: list[str],
 
 def so_sanh(hien_tai: dict, van_tay_hien_tai: list[str],
             truoc: dict | None) -> dict:
-    """So sánh lần chạy hiện tại với lần trước.
-
-    Trả về: lỗi MỚI xuất hiện, lỗi ĐÃ SỬA XONG, lỗi CÒN TỒN, và chênh lệch số liệu.
-    """
     if truoc is None:
         return {
             "co_lan_truoc": False,

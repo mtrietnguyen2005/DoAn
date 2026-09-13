@@ -1,4 +1,3 @@
-"""Nghiệp vụ đơn hàng: đặt hàng, đổi trạng thái, hoàn kho khi hủy."""
 from decimal import Decimal
 
 from django.conf import settings
@@ -12,11 +11,10 @@ from .models import Order, OrderItem, OrderItemBatch, OrderStatusHistory, Shippi
 
 
 class OrderError(Exception):
-    """Lỗi nghiệp vụ đơn hàng."""
+    pass
 
 
 def calculate_shipping_fee(subtotal) -> Decimal:
-    """Miễn phí vận chuyển khi đơn đạt ngưỡng cấu hình."""
     if subtotal >= settings.FREE_SHIPPING_THRESHOLD:
         return Decimal(0)
     return Decimal(settings.DEFAULT_SHIPPING_FEE)
@@ -25,7 +23,6 @@ def calculate_shipping_fee(subtotal) -> Decimal:
 @transaction.atomic
 def create_order(*, user, cart, receiver_name, receiver_phone, receiver_email="",
                  shipping_address, customer_note="", promo=None, payment_method=Order.PaymentMethod.COD):
-    """Tạo đơn hàng từ giỏ hàng: trừ kho theo lô, lưu giá vốn, ghi lịch sử trạng thái."""
     items = cart.get_items()
     if not items:
         raise OrderError("Giỏ hàng đang trống.")
@@ -99,7 +96,6 @@ def create_order(*, user, cart, receiver_name, receiver_phone, receiver_email=""
 
 @transaction.atomic
 def change_order_status(order, new_status, *, user=None, note=""):
-    """Đổi trạng thái đơn hàng, ghi lịch sử và hoàn kho khi hủy."""
     if new_status == order.status:
         return order
 
@@ -149,7 +145,6 @@ def change_order_status(order, new_status, *, user=None, note=""):
 
 @transaction.atomic
 def restore_stock(order, *, user=None):
-    """Hoàn trả toàn bộ số lượng của đơn về đúng lô hàng ban đầu."""
     allocations = (
         OrderItemBatch.objects.select_related("batch", "order_item")
         .filter(order_item__order=order, is_returned=False)
@@ -166,7 +161,6 @@ def restore_stock(order, *, user=None):
 
 
 def cancel_order(order, *, user=None, reason=""):
-    """Khách hàng hủy đơn (chỉ khi đơn chưa được giao)."""
     if not order.can_cancel:
         raise OrderError("Đơn hàng đang được giao hoặc đã kết thúc, không thể hủy.")
     return change_order_status(

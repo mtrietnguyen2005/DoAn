@@ -10,7 +10,6 @@ INPUT_CLASS = (
 
 
 class TailwindMixin:
-    """Gán class TailwindCSS cho toàn bộ widget của form."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

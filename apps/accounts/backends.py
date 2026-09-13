@@ -4,7 +4,6 @@ from django.db.models import Q
 
 
 class EmailOrUsernameBackend(ModelBackend):
-    """Cho phép đăng nhập bằng tên đăng nhập hoặc email."""
 
     def authenticate(self, request, username=None, password=None, **kwargs):
         User = get_user_model()
@@ -15,7 +14,7 @@ class EmailOrUsernameBackend(ModelBackend):
         try:
             user = User.objects.get(Q(username__iexact=username) | Q(email__iexact=username))
         except User.DoesNotExist:
-            User().set_password(password)  # chống dò tài khoản bằng thời gian phản hồi
+            User().set_password(password)
             return None
         except User.MultipleObjectsReturned:
             user = User.objects.filter(Q(username__iexact=username) | Q(email__iexact=username)).order_by("id").first()

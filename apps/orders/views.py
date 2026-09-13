@@ -18,7 +18,6 @@ PROMO_SESSION_KEY = "promo_code"
 
 
 def _cart_response(request, cart, message="", ok=True):
-    """Trả về mảnh HTML cho HTMX hoặc JSON cho lời gọi fetch()."""
     if request.headers.get("HX-Request"):
         response = render(request, "orders/partials/cart_summary.html", {"cart": cart, "items": cart.get_items()})
         response["HX-Trigger"] = json.dumps({"cartUpdated": {"count": len(cart), "message": message, "ok": ok}})
@@ -105,7 +104,6 @@ def cart_clear(request):
 
 @require_POST
 def cart_sync(request):
-    """Đồng bộ giỏ hàng từ LocalStorage của khách vãng lai lên session."""
     try:
         payload = json.loads(request.body.decode() or "{}")
     except json.JSONDecodeError:
@@ -119,7 +117,6 @@ def cart_count(request):
     return JsonResponse({"count": len(Cart(request))})
 
 
-# ---------------------------------------------------------------- Mã giảm giá
 def _get_session_promo(request, subtotal):
     code = request.session.get(PROMO_SESSION_KEY)
     if not code:
@@ -156,7 +153,6 @@ def promo_remove(request):
     return redirect(request.POST.get("next") or "orders:cart_detail")
 
 
-# ---------------------------------------------------------------- Đặt hàng
 @login_required
 def checkout(request):
     cart = Cart(request)

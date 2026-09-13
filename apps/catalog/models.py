@@ -10,7 +10,6 @@ from apps.accounts.models import User
 
 
 def unique_slug(instance, value, field_name="slug"):
-    """Sinh slug duy nhất từ chuỗi đầu vào."""
     base = slugify(value, allow_unicode=False) or "muc"
     model = instance.__class__
     slug, index = base, 2
@@ -21,7 +20,6 @@ def unique_slug(instance, value, field_name="slug"):
 
 
 class Category(models.Model):
-    """Danh mục linh kiện: CPU, VGA, RAM, Mainboard, Laptop..."""
 
     name = models.CharField("Tên danh mục", max_length=120)
     slug = models.SlugField("Đường dẫn", max_length=140, unique=True, blank=True)
@@ -58,7 +56,6 @@ class Category(models.Model):
 
 
 class Brand(models.Model):
-    """Thương hiệu: Intel, AMD, ASUS, MSI, Kingston..."""
 
     name = models.CharField("Tên thương hiệu", max_length=120, unique=True)
     slug = models.SlugField("Đường dẫn", max_length=140, unique=True, blank=True)
@@ -83,7 +80,6 @@ class Brand(models.Model):
 
 
 class Supplier(models.Model):
-    """Nhà cung cấp hàng hoá."""
 
     name = models.CharField("Tên nhà cung cấp", max_length=160)
     slug = models.SlugField("Đường dẫn", max_length=180, unique=True, blank=True)
@@ -124,7 +120,6 @@ class ProductQuerySet(models.QuerySet):
 
 
 class Product(models.Model):
-    """Sản phẩm / linh kiện."""
 
     name = models.CharField("Tên sản phẩm", max_length=255)
     slug = models.SlugField("Đường dẫn", max_length=280, unique=True, blank=True)
@@ -182,10 +177,8 @@ class Product(models.Model):
     def get_absolute_url(self):
         return reverse("catalog:product_detail", kwargs={"slug": self.slug})
 
-    # ---- Giá ----
     @property
     def final_price(self) -> Decimal:
-        """Giá thực bán (ưu tiên giá khuyến mãi)."""
         if self.sale_price and self.sale_price < self.price:
             return self.sale_price
         return self.price
@@ -198,10 +191,8 @@ class Product(models.Model):
     def discount_percent(self) -> int:
         if not self.has_discount or not self.price:
             return 0
-        # Làm tròn xuống để không hiển thị mức giảm cao hơn thực tế
         return int((self.price - self.sale_price) * 100 // self.price)
 
-    # ---- Tồn kho ----
     @property
     def stock_quantity(self) -> int:
         return self.batches.aggregate(total=Sum("quantity_remaining"))["total"] or 0
@@ -210,7 +201,6 @@ class Product(models.Model):
     def in_stock(self) -> bool:
         return self.stock_quantity > 0
 
-    # ---- Đánh giá ----
     @property
     def rating_average(self) -> float:
         return round(self.reviews.aggregate(avg=Avg("rating"))["avg"] or 0, 1)
@@ -221,7 +211,6 @@ class Product(models.Model):
 
     @property
     def spec_lines(self):
-        """Tách thông số kỹ thuật thành danh sách (tên, giá trị)."""
         lines = []
         for raw in (self.specifications or "").splitlines():
             raw = raw.strip()
@@ -233,7 +222,6 @@ class Product(models.Model):
 
 
 class ProductImage(models.Model):
-    """Ảnh phụ của sản phẩm."""
 
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="images", verbose_name="Sản phẩm")
     image = models.ImageField("Ảnh", upload_to="products/")
@@ -250,7 +238,6 @@ class ProductImage(models.Model):
 
 
 class Review(models.Model):
-    """Đánh giá sản phẩm của khách hàng."""
 
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="reviews", verbose_name="Sản phẩm")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reviews", verbose_name="Người đánh giá")

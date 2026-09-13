@@ -1,4 +1,3 @@
-"""Kiểm thử tích hợp: lọc sản phẩm và CRUD đánh giá qua HTTP."""
 from decimal import Decimal
 
 import pytest
@@ -11,7 +10,6 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def catalog(product_factory, batch_factory, category, brand):
-    """Hai sản phẩm: một rẻ còn hàng, một đắt hết hàng."""
     from apps.catalog.models import Brand
 
     brand_khac = Brand.objects.create(name="Samsung")
@@ -58,7 +56,6 @@ class TestLocSanPham:
         assert [p.name for p in response.context["products"]] == ["SSD 256GB", "SSD 2TB"]
 
     def test_yeu_cau_htmx_chi_tra_ve_luoi_san_pham(self, client, catalog):
-        """Lọc bằng HTMX chỉ nạp lại phần lưới, không nạp lại cả trang."""
         response = client.get(reverse("catalog:product_list"), HTTP_HX_REQUEST="true")
         templates = [t.name for t in response.templates]
         assert "catalog/partials/product_grid.html" in templates

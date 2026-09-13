@@ -18,7 +18,6 @@ SORT_OPTIONS = {
 
 
 def _filtered_products(request):
-    """Áp dụng bộ lọc tìm kiếm / danh mục / thương hiệu / giá / tồn kho."""
     from django.db.models.functions import Coalesce
 
     qs = (
@@ -94,7 +93,6 @@ def product_list(request):
         "querystring": querystring.urlencode(),
     }
 
-    # HTMX: chỉ trả về phần lưới sản phẩm để cập nhật một phần trang
     if request.headers.get("HX-Request"):
         return render(request, "catalog/partials/product_grid.html", context)
     return render(request, "catalog/product_list.html", context)
@@ -155,7 +153,6 @@ def supplier_detail(request, slug):
     return render(request, "catalog/supplier_detail.html", {"supplier": supplier, "products": products})
 
 
-# ---------------------------------------------------------------- Đánh giá (CRUD)
 @login_required
 @require_POST
 def review_create(request, slug):

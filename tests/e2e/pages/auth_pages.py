@@ -1,11 +1,7 @@
-"""Page Object cho đăng ký và đăng nhập."""
 from playwright.sync_api import expect
 
 from .base_page import BasePage
 
-#: Thanh điều hướng có sẵn một form tìm kiếm (method="get") kèm nút submit.
-#: Mọi selector nút gửi form phải giới hạn vào form POST của trang, nếu không
-#: sẽ bấm nhầm nút "Tìm" trên header.
 MAIN_FORM = "form[method='post']"
 
 
@@ -28,11 +24,6 @@ class RegisterPage(BasePage):
         return [t.strip() for t in self.page.locator("p.text-rose-600").all_inner_texts()]
 
     def expect_field_error(self, fragment: str):
-        """Chờ trang tải lại rồi khẳng định có thông báo lỗi chứa đoạn cho trước.
-
-        Phải dùng ``expect`` chứ không đọc DOM ngay: sau khi bấm nút gửi form,
-        trình duyệt còn đang tải lại trang. ``expect`` tự thử lại tới khi khớp.
-        """
         expect(self.page.locator("p.text-rose-600").filter(has_text=fragment).first) \
             .to_be_visible()
         return self
@@ -58,11 +49,9 @@ class LoginPage(BasePage):
         return box.inner_text().strip() if box.count() else ""
 
     def expect_error(self, fragment: str):
-        """Khẳng định có hộp thông báo lỗi, tự chờ trang tải lại."""
         expect(self.page.locator("div.bg-rose-50").first).to_contain_text(fragment)
         return self
 
     def expect_logged_in(self):
-        """Đăng nhập thành công thì menu tài khoản thay cho nút Đăng nhập."""
         expect(self.page.locator("a[href='/tai-khoan/dang-nhap/']")).to_have_count(0)
         return self

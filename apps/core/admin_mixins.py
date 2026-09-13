@@ -1,11 +1,6 @@
-"""Mixin dùng chung cho Django Admin."""
 
 
 class ReadOnlyForStaffMixin:
-    """Resource chỉ đọc đối với Admin thường; superuser vẫn có toàn quyền.
-
-    Áp dụng cho: Địa chỉ người dùng, Đánh giá, Giao dịch kho.
-    """
 
     def has_add_permission(self, request):
         return bool(request.user.is_superuser)

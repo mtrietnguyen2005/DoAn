@@ -1,15 +1,3 @@
-"""Gửi log lỗi ĐÃ LỌC cho DeepSeek và nhận về phân tích có cấu trúc.
-
-Dùng SDK ``openai`` trỏ tới ``api.deepseek.com`` — DeepSeek cung cấp API
-tương thích chuẩn OpenAI nên không cần SDK riêng.
-
-Hai nguyên tắc bắt buộc:
-
-1. **Chỉ gửi dữ liệu đã lọc.** Module này kiểm tra lại lần nữa trước khi gửi;
-   phát hiện thông tin nhạy cảm còn sót thì DỪNG, không gửi.
-2. **Kết quả AI là GỢI Ý, không phải kết luận.** Báo cáo luôn hiển thị
-   traceback gốc bên cạnh để người đọc tự kiểm chứng.
-"""
 from __future__ import annotations
 
 import json
@@ -47,7 +35,6 @@ Yêu cầu bắt buộc:
 
 
 class PhanTichNhom(BaseModel):
-    """Kết quả phân tích một nhóm lỗi."""
 
     van_tay: str = Field(description="Mã vân tay của nhóm, chép nguyên từ dữ liệu đầu vào")
     tieu_de: str = Field(description="Tóm tắt lỗi trong một câu ngắn")
@@ -66,17 +53,13 @@ class KetQuaPhanTich(BaseModel):
 
 
 class LoiBaoMat(Exception):
-    """Phát hiện thông tin nhạy cảm còn sót — dừng, không gửi đi."""
+    pass
 
 
 def co_khoa_api() -> bool:
-    """Đã cấu hình khoá API của DeepSeek chưa."""
     return bool(os.environ.get("DEEPSEEK_API_KEY"))
 
 
-# ============================================================================
-# CHUẨN BỊ DỮ LIỆU GỬI ĐI
-# ============================================================================
 def _dung_du_lieu_gui(cac_nhom: list[dict], tom_tat: dict) -> str:
     goi = {"tom_tat_lan_chay": tom_tat, "cac_nhom_loi": []}
     for n in cac_nhom:
@@ -93,7 +76,6 @@ def _dung_du_lieu_gui(cac_nhom: list[dict], tom_tat: dict) -> str:
 
 
 def _kiem_tra_an_toan(noi_dung: str) -> None:
-    """Rào chắn cuối cùng trước khi dữ liệu rời khỏi máy."""
     con_sot = kiem_tra_con_sot(noi_dung)
     if con_sot:
         raise LoiBaoMat(
@@ -102,15 +84,7 @@ def _kiem_tra_an_toan(noi_dung: str) -> None:
         )
 
 
-# ============================================================================
-# GỌI API
-# ============================================================================
 def _goi_deepseek(noi_dung: str) -> KetQuaPhanTich:
-    """Gọi DeepSeek qua SDK openai (DeepSeek dùng giao thức tương thích OpenAI).
-
-    DeepSeek có chế độ JSON (``response_format``) bảo đảm trả về JSON hợp lệ,
-    nhưng KHÔNG bảo đảm đúng lược đồ. Vì vậy phải kiểm tra lại bằng Pydantic.
-    """
     from openai import OpenAI
 
     client = OpenAI(
@@ -141,14 +115,6 @@ def _goi_deepseek(noi_dung: str) -> KetQuaPhanTich:
 
 
 def phan_tich(cac_nhom: list[dict], tom_tat: dict) -> KetQuaPhanTich | None:
-    """Nhờ AI phân tích các nhóm lỗi.
-
-    Trả về ``None`` khi không có lỗi nào, hoặc chưa cấu hình khoá API — khi đó
-    báo cáo vẫn được sinh ra, chỉ thiếu phần nhận định của AI.
-
-    Ném ``LoiBaoMat`` nếu phát hiện thông tin nhạy cảm còn sót.
-    Ném ``ValidationError`` nếu AI trả về dữ liệu sai lược đồ.
-    """
     if not cac_nhom or not co_khoa_api():
         return None
 

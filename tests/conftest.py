@@ -1,9 +1,3 @@
-"""Fixtures dùng chung cho toàn bộ bộ kiểm thử.
-
-pytest-django tự động dọn dẹp database sau mỗi test: mỗi test chạy trong một
-transaction riêng và được rollback khi kết thúc, nên các test hoàn toàn độc lập
-với nhau và không cần tự tay xoá dữ liệu.
-"""
 from datetime import timedelta
 from decimal import Decimal
 
@@ -21,11 +15,6 @@ User = get_user_model()
 
 
 def pytest_report_header(config):
-    """In rõ bộ test đang chạy trên cấu hình và cơ sở dữ liệu nào.
-
-    Giúp phát hiện ngay trường hợp test vô tình chạy trên SQL Server thật
-    thay vì SQLite trong bộ nhớ.
-    """
     from django.conf import settings
 
     db = settings.DATABASES["default"]
@@ -36,22 +25,13 @@ def pytest_report_header(config):
     ]
 
 
-# ============================================================================
-# CẤU HÌNH CHUNG
-# ============================================================================
 @pytest.fixture(autouse=True)
 def fast_password_hashing(settings):
-    """Dùng thuật toán băm nhanh để test chạy nhanh hơn nhiều lần.
-
-    Chỉ ảnh hưởng trong lúc test. Test kiểm tra cấu hình băm mật khẩu thật
-    của production sẽ tự ghi đè lại thiết lập này.
-    """
     settings.PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 
 @pytest.fixture(autouse=True)
 def media_to_tmp(settings, tmp_path):
-    """Ảnh upload trong test được ghi vào thư mục tạm, không đụng media/ thật."""
     settings.MEDIA_ROOT = tmp_path / "media"
 
 
@@ -60,12 +40,8 @@ def today():
     return timezone.localdate()
 
 
-# ============================================================================
-# NGƯỜI DÙNG
-# ============================================================================
 @pytest.fixture
 def user_factory(db):
-    """Tạo người dùng tuỳ ý: user_factory(username="abc", is_staff=True)."""
     counter = {"n": 0}
 
     def _make(username=None, password="MatKhauManh!23", **kwargs):
@@ -79,31 +55,25 @@ def user_factory(db):
 
 @pytest.fixture
 def customer(user_factory):
-    """Khách hàng thông thường."""
     return user_factory(username="khachhang", email="khach@test.vn", phone="0901234567")
 
 
 @pytest.fixture
 def other_customer(user_factory):
-    """Khách hàng thứ hai — dùng để kiểm tra cách ly dữ liệu giữa các user."""
     return user_factory(username="khachhang_khac", email="khac@test.vn")
 
 
 @pytest.fixture
 def staff_user(user_factory):
-    """Admin thường: có quyền vào trang quản trị nhưng KHÔNG phải superuser."""
     from django.contrib.auth.models import Permission
 
     user = user_factory(username="nhanvien", email="nhanvien@test.vn", is_staff=True)
-    # Cấp toàn bộ permission của Django để chứng minh rằng thứ chặn họ
-    # là ReadOnlyForStaffMixin, chứ không phải do thiếu quyền.
     user.user_permissions.set(Permission.objects.all())
     return user
 
 
 @pytest.fixture
 def superuser(db):
-    """Superuser: toàn quyền trên mọi resource."""
     return User.objects.create_superuser(
         username="quantri", email="quantri@test.vn", password="MatKhauManh!23"
     )
@@ -117,9 +87,6 @@ def address(customer):
     )
 
 
-# ============================================================================
-# DANH MỤC SẢN PHẨM
-# ============================================================================
 @pytest.fixture
 def category(db):
     return Category.objects.create(name="CPU - Bộ vi xử lý", icon="🔲")
@@ -137,7 +104,6 @@ def supplier(db):
 
 @pytest.fixture
 def product_factory(db, category, brand, supplier):
-    """Tạo sản phẩm tuỳ ý: product_factory(price=1000, sale_price=800)."""
     counter = {"n": 0}
 
     def _make(**kwargs):
@@ -155,7 +121,6 @@ def product_factory(db, category, brand, supplier):
 
 @pytest.fixture
 def product(product_factory):
-    """Sản phẩm giá 1.500.000đ, CHƯA có lô hàng nào (tồn kho = 0)."""
     return product_factory(
         name="Intel Core i5-13400F", sku="CPU0001", price=Decimal(1500000),
         specifications="Socket: LGA 1700\nSố nhân: 10\nTDP: 65W",
@@ -164,19 +129,14 @@ def product(product_factory):
 
 @pytest.fixture
 def discounted_product(product_factory):
-    """Sản phẩm 8.000.000đ đang giảm còn 7.000.000đ (giảm 12,5%)."""
     return product_factory(
         name="ASUS RTX 4060 OC", sku="VGA0001",
         price=Decimal(8000000), sale_price=Decimal(7000000),
     )
 
 
-# ============================================================================
-# KHO HÀNG — LÔ SẢN PHẨM
-# ============================================================================
 @pytest.fixture
 def batch_factory(db):
-    """Tạo lô hàng tuỳ ý cho một sản phẩm."""
     counter = {"n": 0}
 
     def _make(product, quantity=10, cost_price=1000000, received_days_ago=None, **kwargs):
@@ -194,33 +154,23 @@ def batch_factory(db):
 
 @pytest.fixture
 def batch_early(product, batch_factory):
-    """Lô A: nhập kho SỚM (30 ngày trước), 4 sản phẩm, giá vốn 1.000.000đ.
-
-    Theo quy tắc FIFO thì lô này phải được xuất kho TRƯỚC.
-    """
     return batch_factory(product, quantity=4, cost_price=1000000,
                          received_days_ago=30, batch_code="LO-SOM")
 
 
 @pytest.fixture
 def batch_late(product, batch_factory):
-    """Lô B: nhập kho MUỘN (5 ngày trước), 10 sản phẩm, giá vốn 1.200.000đ."""
     return batch_factory(product, quantity=10, cost_price=1200000,
                          received_days_ago=5, batch_code="LO-MUON")
 
 
 @pytest.fixture
 def product_with_batches(product, batch_early, batch_late):
-    """Sản phẩm có tổng tồn kho 14 (4 từ lô sớm + 10 từ lô muộn)."""
     return product
 
 
-# ============================================================================
-# MÃ GIẢM GIÁ
-# ============================================================================
 @pytest.fixture
 def promo_percent(db):
-    """Giảm 10%, tối đa 500.000đ, không yêu cầu giá trị đơn tối thiểu."""
     return PromoCode.objects.create(
         code="GIAM10", discount_type=PromoCode.DiscountType.PERCENT,
         value=Decimal(10), max_discount=Decimal(500000),
@@ -230,7 +180,6 @@ def promo_percent(db):
 
 @pytest.fixture
 def promo_fixed(db):
-    """Giảm thẳng 200.000đ cho đơn từ 5.000.000đ."""
     return PromoCode.objects.create(
         code="GIAM200K", discount_type=PromoCode.DiscountType.FIXED,
         value=Decimal(200000), min_order_value=Decimal(5000000),
@@ -240,7 +189,6 @@ def promo_fixed(db):
 
 @pytest.fixture
 def promo_expired(db):
-    """Mã đã hết hạn từ hôm qua."""
     return PromoCode.objects.create(
         code="HETHAN", discount_type=PromoCode.DiscountType.PERCENT, value=Decimal(50),
         start_date=timezone.now() - timedelta(days=10),
@@ -248,14 +196,7 @@ def promo_expired(db):
     )
 
 
-# ============================================================================
-# GIỎ HÀNG & ĐƠN HÀNG
-# ============================================================================
 class StubCart:
-    """Giỏ hàng giả lập, chỉ cần đủ giao diện mà ``create_order`` sử dụng.
-
-    Nhờ vậy test service đặt hàng không phụ thuộc vào session của HTTP request.
-    """
 
     def __init__(self, items):
         self._items = items
@@ -270,7 +211,6 @@ class StubCart:
 
 @pytest.fixture
 def cart_factory():
-    """Tạo giỏ hàng giả lập: cart_factory((product, 2), (product2, 1))."""
 
     def _make(*pairs):
         items = []
@@ -290,7 +230,6 @@ def cart_factory():
 
 @pytest.fixture
 def order_factory(customer, cart_factory):
-    """Tạo đơn hàng thật thông qua service (có trừ kho, ghi COGS, ghi lịch sử)."""
     from apps.orders.services import create_order
 
     def _make(product, quantity=1, user=None, promo=None, **kwargs):
@@ -309,13 +248,9 @@ def order_factory(customer, cart_factory):
 
 @pytest.fixture
 def order(product_with_batches, order_factory):
-    """Đơn hàng 2 sản phẩm, lấy toàn bộ từ lô sớm (giá vốn 1.000.000đ)."""
     return order_factory(product_with_batches, quantity=2)
 
 
-# ============================================================================
-# NỘI DUNG
-# ============================================================================
 @pytest.fixture
 def news_article(superuser):
     return News.objects.create(

@@ -1,13 +1,3 @@
-"""Kiểm thử tích hợp: trang Dashboard của Admin.
-
-Bảo vệ khỏi lỗi ORDER BY / GROUP BY của SQL Server (mã 8127). SQL Server từ chối
-câu lệnh có ``ORDER BY`` trên cột không nằm trong ``GROUP BY``, trong khi SQLite
-bỏ qua. Driver ``mssql-django`` lại giữ nguyên ``ORDER BY`` mặc định của model khi
-câu lệnh có ``GROUP BY``, nên mọi truy vấn gom nhóm đều phải gọi ``.order_by()``.
-
-Test này phân tích trực tiếp câu SQL sinh ra nên bắt được lỗi ngay cả khi
-đang chạy trên SQLite.
-"""
 import re
 from datetime import timedelta
 from decimal import Decimal
@@ -35,7 +25,6 @@ def dashboard_request(superuser):
 
 @pytest.fixture
 def du_lieu_dashboard(product_with_batches, order, batch_factory, product_factory):
-    """Có sẵn đơn hàng và sản phẩm sắp hết tồn kho."""
     sap_het = product_factory(name="Hàng sắp hết", sku="LOW001")
     batch_factory(sap_het, quantity=2, cost_price=100000,
                   received_days_ago=3, batch_code="LO-SAPHETTON")
@@ -46,7 +35,7 @@ def chay_dashboard(request):
     with CaptureQueriesContext(connection) as ctx:
         context = dashboard_callback(request, {})
         for key in LAZY_KEYS:
-            list(context[key])   # ép lượng giá queryset lười
+            list(context[key])
     return context, ctx.captured_queries
 
 
@@ -69,7 +58,6 @@ class TestDashboard:
 
     def test_moi_cot_trong_order_by_deu_phai_co_trong_group_by(self, dashboard_request,
                                                                du_lieu_dashboard):
-        """Chặn tái phát lỗi 8127 của SQL Server."""
         _, queries = chay_dashboard(dashboard_request)
         for entry in queries:
             sql = entry["sql"]
@@ -99,9 +87,6 @@ class TestDashboard:
 
 
 class TestTrangAdminMoDuoc:
-    """Mỗi app đăng ký ít nhất một trang admin — chọn một trang đại diện cho
-    mỗi app thay vì liệt kê hết mọi model, vì cả 16 model đều đi qua cùng
-    một cơ chế đăng ký/render của django-unfold."""
 
     @pytest.mark.parametrize("url", [
         "/admin/",

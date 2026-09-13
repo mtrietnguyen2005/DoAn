@@ -1,4 +1,3 @@
-"""Kiểm thử tích hợp: giỏ hàng qua HTTP (session + LocalStorage)."""
 from decimal import Decimal
 
 import pytest
@@ -9,7 +8,6 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def product_ban(product_factory, batch_factory):
-    """Sản phẩm 5.000.000đ đang giảm còn 4.500.000đ, tồn kho 5."""
     p = product_factory(name="Ryzen 5", sku="CPU100",
                         price=Decimal(5000000), sale_price=Decimal(4500000))
     batch_factory(p, quantity=5, cost_price=3800000)
@@ -56,7 +54,6 @@ class TestGioHang:
         assert response.json()["count"] == 2
 
     def test_gio_hang_duoc_giu_sau_khi_dang_nhap(self, client, product_ban, customer):
-        """Khách vãng lai thêm hàng, đăng nhập xong giỏ vẫn còn nguyên."""
         client.post(reverse("orders:cart_add", args=[product_ban.pk]), {"quantity": 2})
         client.login(username=customer.username, password="MatKhauManh!23")
         assert client.get(reverse("orders:cart_count")).json()["count"] == 2
@@ -72,7 +69,7 @@ class TestMaGiamGiaQuaHttp:
         client.post(reverse("orders:cart_add", args=[product_ban.pk]), {"quantity": 1})
         client.post(reverse("orders:promo_apply"), {"code": promo_percent.code})
         response = client.get(reverse("orders:cart_detail"))
-        assert response.context["discount"] == Decimal(450000)   # 10% của 4.500.000
+        assert response.context["discount"] == Decimal(450000)
 
     def test_go_ma_giam_gia(self, client, product_ban, promo_percent):
         client.post(reverse("orders:cart_add", args=[product_ban.pk]), {"quantity": 1})
@@ -115,7 +112,7 @@ class TestDatHangQuaHttp:
         assert order.user == customer
         assert order.total_quantity == 2
         product_ban.refresh_from_db()
-        assert product_ban.stock_quantity == 3   # 5 - 2
+        assert product_ban.stock_quantity == 3
 
     def test_so_dien_thoai_khong_hop_le_bi_tu_choi(self, client, customer, product_ban):
         from apps.orders.models import Order
@@ -146,19 +143,8 @@ class TestDatHangQuaHttp:
 
 @pytest.mark.integration
 class TestCsrfChoKhachVangLai:
-    """Khách chưa đăng nhập phải thêm được hàng vào giỏ.
-
-    ``django.test.Client`` mặc định TẮT kiểm tra CSRF, nên các test khác trong
-    tệp này không phát hiện được khi trang thiếu token. Nhóm test dưới đây bật
-    ``enforce_csrf_checks=True`` để mô phỏng đúng hành vi của trình duyệt thật.
-
-    Bối cảnh: trang danh sách sản phẩm và trang chủ không có form POST nào dành
-    cho khách vãng lai, nên nếu ``base.html`` không phát hành token thì nút
-    "Thêm vào giỏ" (gọi ``fetch``) sẽ bị chặn với lỗi 403.
-    """
 
     def test_trang_cong_luon_phat_hanh_csrf_token(self, client, product_ban):
-        """Mọi trang đều phải có thẻ meta csrf-token và đặt cookie csrftoken."""
         for url in (reverse("core:home"), reverse("catalog:product_list")):
             response = client.get(url)
             assert 'name="csrf-token"' in response.content.decode(), url
@@ -170,7 +156,6 @@ class TestCsrfChoKhachVangLai:
         strict = Client(enforce_csrf_checks=True)
         page = strict.get(reverse("catalog:product_list"))
 
-        # Lấy token đúng như JavaScript lấy từ thẻ meta
         html = page.content.decode()
         token = html.split('name="csrf-token" content="')[1].split('"')[0]
         assert token
@@ -185,7 +170,6 @@ class TestCsrfChoKhachVangLai:
         assert response.json()["count"] == 1
 
     def test_thieu_token_thi_bi_chan(self, product_ban):
-        """Đối chứng: không có token thì server phải từ chối."""
         from django.test import Client
 
         strict = Client(enforce_csrf_checks=True)

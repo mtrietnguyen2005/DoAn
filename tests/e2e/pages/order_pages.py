@@ -1,4 +1,3 @@
-"""Page Object cho lịch sử đơn hàng và chi tiết đơn."""
 from playwright.sync_api import expect
 
 from .base_page import BasePage
@@ -37,11 +36,6 @@ class OrderDetailPage(BasePage):
 
     @property
     def status_badge(self):
-        """Nhãn trạng thái đơn.
-
-        Giới hạn trong ``main`` vì badge số lượng giỏ hàng trên header cũng có
-        lớp ``rounded-full`` và sẽ bị chọn nhầm nếu tìm trên toàn trang.
-        """
         return self.page.locator("main span.rounded-full").first
 
     def status_text(self) -> str:
@@ -57,7 +51,6 @@ class OrderDetailPage(BasePage):
     def total_text(self) -> str:
         return self.page.locator("dt:has-text('Tổng cộng')").locator("xpath=..").inner_text()
 
-    # ---- Huỷ đơn ----
     def can_cancel(self) -> bool:
         return self.page.locator("button:has-text('Xác nhận hủy đơn')").count() > 0
 

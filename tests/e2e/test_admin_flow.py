@@ -1,8 +1,3 @@
-"""GIAI ĐOẠN 2 — Kịch bản E2E luồng quản trị viên.
-
-Luồng: Đăng nhập /admin → Thêm lô hàng mới → Duyệt trạng thái đơn
-→ Kiểm tra thống kê trên Dashboard.
-"""
 import pytest
 from django.utils import timezone
 from playwright.sync_api import expect
@@ -15,7 +10,6 @@ pytestmark = [pytest.mark.e2e, pytest.mark.django_db(transaction=True)]
 
 @pytest.fixture
 def don_hang_cho_duyet(shop_data, customer_account):
-    """Một đơn hàng ở trạng thái Chờ xác nhận để admin thao tác."""
     from apps.orders.services import create_order
 
     class _Cart:
@@ -53,7 +47,6 @@ class TestDangNhapAdmin:
         admin_login_page.expect_url_contains("/admin/login")
 
     def test_khach_hang_thuong_khong_vao_duoc_admin(self, admin_login_page, customer_account):
-        """Tài khoản không phải staff bị giữ lại ở trang đăng nhập."""
         admin_login_page.go().login(customer_account.username, customer_account.raw_password)
         admin_login_page.expect_url_contains("/admin/login")
 
@@ -74,13 +67,11 @@ class TestQuanLyLoHang:
 
         lo_moi = Batch.objects.get(batch_code="LO-MOI-E2E")
         assert lo_moi.quantity_in == 25
-        assert lo_moi.quantity_remaining == 25   # tự điền bằng số lượng nhập
+        assert lo_moi.quantity_remaining == 25
 
-        # Tồn kho của sản phẩm tăng đúng
         shop_data["product"].refresh_from_db()
         assert shop_data["product"].stock_quantity == ton_kho_truoc + 25
 
-        # Có ghi vết giao dịch nhập kho
         giao_dich = StockTransaction.objects.get(
             batch=lo_moi, transaction_type=StockTransaction.Type.IN)
         assert giao_dich.quantity == 25
@@ -104,7 +95,6 @@ class TestDuyetTrangThaiDonHang:
         don_hang_cho_duyet.refresh_from_db()
         assert don_hang_cho_duyet.status == Order.Status.CONFIRMED
 
-        # Lịch sử được ghi thêm một dòng (ban đầu 1 dòng "Chờ xác nhận")
         lich_su = list(don_hang_cho_duyet.status_history.values_list("to_status", flat=True))
         assert lich_su == ["pending", "confirmed"]
         assert OrderStatusHistory.objects.filter(
@@ -126,14 +116,14 @@ class TestDuyetTrangThaiDonHang:
     def test_admin_huy_don_thi_kho_duoc_hoan_dung_lo(self, admin_order_page, shop_data,
                                                      don_hang_cho_duyet, logged_in_admin):
         shop_data["batch_early"].refresh_from_db()
-        assert shop_data["batch_early"].quantity_remaining == 2   # đã trừ 2
+        assert shop_data["batch_early"].quantity_remaining == 2
 
         admin_order_page.go().open_order(don_hang_cho_duyet.code)
         admin_order_page.change_status("cancelled")
 
         shop_data["batch_early"].refresh_from_db()
         shop_data["batch_late"].refresh_from_db()
-        assert shop_data["batch_early"].quantity_remaining == 4    # hoàn đúng lô
+        assert shop_data["batch_early"].quantity_remaining == 4
         assert shop_data["batch_late"].quantity_remaining == 10
 
         don_hang_cho_duyet.refresh_from_db()
@@ -141,12 +131,6 @@ class TestDuyetTrangThaiDonHang:
 
 
 class TestDashboardThongKe:
-    """Độ đúng của số liệu (tổng sản phẩm, đếm theo trạng thái, cảnh báo tồn
-    kho) đã được kiểm thử chi tiết ở tầng tích hợp
-    (``tests/integration/test_dashboard.py::TestDashboard``, đọc thẳng
-    context trả về, không qua trình duyệt). Ở tầng E2E chỉ giữ lại hai ca:
-    xác nhận giao diện thật render đúng, và ca chặn tái phát lỗi SQL Server
-    thật sự từng xảy ra trên chính trang này."""
 
     def test_dashboard_hien_du_bon_the_thong_ke(self, admin_dashboard_page, shop_data,
                                                 don_hang_cho_duyet, logged_in_admin):
@@ -156,18 +140,12 @@ class TestDashboardThongKe:
 
     def test_dashboard_mo_duoc_tren_sql_server(self, admin_dashboard_page, don_hang_cho_duyet,
                                                logged_in_admin):
-        """Chặn tái phát lỗi 8127 (ORDER BY không nằm trong GROUP BY).
-
-        Trang này từng không mở được trên SQL Server. Chạy bộ test với
-        ``TEST_ON_MSSQL=True`` sẽ kiểm chứng lại trên đúng CSDL thật.
-        """
         admin_dashboard_page.go().expect_loaded()
         assert admin_dashboard_page.revenue_text()
         assert admin_dashboard_page.profit_text()
 
 
 class TestPhanQuyenReadOnlyTrenGiaoDien:
-    """Admin thường chỉ xem được 3 resource nhạy cảm, không có nút Thêm."""
 
     @pytest.fixture
     def nhan_vien(self, transactional_db):
@@ -192,7 +170,6 @@ class TestPhanQuyenReadOnlyTrenGiaoDien:
         admin_login_page.go().login(nhan_vien.username, nhan_vien.raw_password)
         page.goto(f"{site_url}{duong_dan}", wait_until="domcontentloaded")
 
-        # Trang xem được, nhưng không có liên kết "Thêm"
         assert "/admin/login" not in page.url
         assert page.locator("a.addlink, a[href$='/add/']").count() == 0
 

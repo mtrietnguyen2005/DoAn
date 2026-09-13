@@ -8,7 +8,6 @@ from apps.catalog.models import Product, Supplier
 
 
 class Batch(models.Model):
-    """Lô hàng nhập kho. Tồn kho của sản phẩm = tổng số lượng còn lại của các lô."""
 
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="batches", verbose_name="Sản phẩm")
     batch_code = models.CharField("Mã lô", max_length=60, unique=True)
@@ -51,7 +50,6 @@ class Batch(models.Model):
 
 
 class StockTransaction(models.Model):
-    """Lịch sử giao dịch kho: nhập, xuất, điều chỉnh, hoàn trả."""
 
     class Type(models.TextChoices):
         IN = "in", "Nhập kho"

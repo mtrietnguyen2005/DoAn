@@ -7,7 +7,6 @@ from apps.catalog.models import Product, unique_slug
 
 
 class Banner(models.Model):
-    """Banner quảng cáo hiển thị trên trang chủ."""
 
     class Position(models.TextChoices):
         HERO = "hero", "Slider trang chủ"
@@ -40,7 +39,6 @@ class Banner(models.Model):
 
 
 class News(models.Model):
-    """Tin tức, bài viết công nghệ."""
 
     title = models.CharField("Tiêu đề", max_length=255)
     slug = models.SlugField("Đường dẫn", max_length=280, unique=True, blank=True)
@@ -79,7 +77,6 @@ class News(models.Model):
 
 
 class Promotion(models.Model):
-    """Chương trình khuyến mãi."""
 
     title = models.CharField("Tên chương trình", max_length=255)
     slug = models.SlugField("Đường dẫn", max_length=280, unique=True, blank=True)

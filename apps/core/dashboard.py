@@ -1,4 +1,3 @@
-"""Dữ liệu cho trang Bảng điều khiển của Admin (django-unfold DASHBOARD_CALLBACK)."""
 from django.conf import settings
 from django.db.models import Count, F, Sum
 from django.db.models.functions import Coalesce
@@ -13,9 +12,6 @@ def dashboard_callback(request, context):
     today = timezone.localdate()
     month_start = today.replace(day=1)
 
-    # Lưu ý: luôn gọi .order_by() trước khi gom nhóm/tổng hợp.
-    # SQL Server từ chối câu lệnh có ORDER BY trên cột không nằm trong GROUP BY,
-    # mà driver mssql-django lại giữ nguyên ORDER BY mặc định của model.
     completed = Order.objects.filter(status=Order.Status.COMPLETED).order_by()
     revenue_month = completed.filter(created_at__date__gte=month_start).aggregate(s=Sum("total"))["s"] or 0
 
@@ -28,7 +24,6 @@ def dashboard_callback(request, context):
         or 0
     )
 
-    # Sản phẩm sắp hết / đã hết tồn kho
     low_stock_products = (
         Product.objects.active()
         .annotate(stock_total=Coalesce(Sum("batches__quantity_remaining"), 0))

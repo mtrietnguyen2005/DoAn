@@ -1,4 +1,3 @@
-"""Giỏ hàng lưu trong session, tự động đồng bộ vào tài khoản khi đăng nhập."""
 from decimal import Decimal
 
 from django.conf import settings
@@ -7,10 +6,6 @@ from apps.catalog.models import Product
 
 
 class Cart:
-    """Bọc dữ liệu giỏ hàng trong ``request.session``.
-
-    Cấu trúc lưu trữ: ``{"<product_id>": {"quantity": int}}``
-    """
 
     def __init__(self, request):
         self.session = request.session
@@ -20,7 +15,6 @@ class Cart:
             cart = self.session[settings.CART_SESSION_KEY] = {}
         self.cart = cart
 
-    # ---- Thao tác cơ bản ----
     def add(self, product, quantity=1, *, replace=False):
         key = str(product.pk)
         current = self.cart.get(key, {"quantity": 0})["quantity"]
@@ -47,7 +41,6 @@ class Cart:
         self.session.modified = True
 
     def set_from_payload(self, payload):
-        """Nhận dữ liệu giỏ hàng từ LocalStorage của trình duyệt và gộp vào session."""
         for raw_id, quantity in (payload or {}).items():
             try:
                 product = Product.objects.active().get(pk=int(raw_id))
@@ -58,10 +51,8 @@ class Cart:
                 self.add(product, quantity)
 
     def merge_into_user(self, user):
-        """Giữ nguyên giỏ hàng session sau khi đăng nhập (session được gắn với user)."""
         self.save()
 
-    # ---- Truy vấn ----
     def get_items(self):
         product_ids = [int(pk) for pk in self.cart.keys() if str(pk).isdigit()]
         products = {

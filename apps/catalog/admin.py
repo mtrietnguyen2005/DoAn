@@ -75,10 +75,6 @@ class ProductAdmin(ModelAdmin):
         ("Trạng thái", {"fields": ("is_active", "is_featured", "stock_display", "view_count", "created_at", "updated_at")}),
     )
 
-    #: Phải khai báo tường minh: get_queryset() bên dưới dùng annotate() nên câu
-    #: lệnh có GROUP BY, và Django bỏ Meta.ordering với truy vấn gom nhóm. Thiếu
-    #: dòng này thì danh sách không có thứ tự và phân trang cho kết quả bấp bênh
-    #: (Django cảnh báo UnorderedObjectListWarning).
     ordering = ("-created_at", "-id")
 
     def get_queryset(self, request):
@@ -114,7 +110,6 @@ class ProductAdmin(ModelAdmin):
 
 @admin.register(Review)
 class ReviewAdmin(ReadOnlyForStaffMixin, ModelAdmin):
-    """Chỉ đọc với Admin thường (theo yêu cầu phân quyền)."""
 
     list_display = ("product", "user", "rating", "title", "is_approved", "created_at")
     list_filter = ("rating", "is_approved", "created_at")

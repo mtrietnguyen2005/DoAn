@@ -1,4 +1,3 @@
-"""Page Object cho giỏ hàng và thanh toán."""
 from playwright.sync_api import expect
 
 from .base_page import BasePage
@@ -25,7 +24,6 @@ class CartPage(BasePage):
         return self.page.locator("dt:has-text('Tổng cộng')").locator("xpath=..").inner_text()
 
     def increase_first_item(self):
-        """Bấm dấu + trên dòng hàng đầu tiên (thao tác qua HTMX)."""
         self.line_items.first.locator("button:has-text('+')").click()
         return self
 
@@ -42,7 +40,6 @@ class CartPage(BasePage):
         return self
 
     def expect_first_item_quantity(self, quantity: int):
-        """Khẳng định số lượng dòng hàng đầu tiên, tự thử lại tới khi khớp."""
         expect(self.line_items.first.locator("form span").first).to_have_text(str(quantity))
         return self
 
@@ -64,7 +61,6 @@ class CartPage(BasePage):
         return self
 
     def expect_discount_contains(self, fragment: str):
-        """Chờ trang tải lại sau khi áp mã rồi khẳng định số tiền giảm."""
         expect(self.page.locator("dt", has_text="Giảm giá").locator("xpath=..")) \
             .to_contain_text(fragment)
         return self
@@ -78,11 +74,6 @@ class CartPage(BasePage):
         return row.locator("xpath=..").inner_text() if row.count() else ""
 
     def go_to_checkout(self):
-        """Sang trang thanh toán.
-
-        Khẳng định giỏ có hàng trước đã: nút này chỉ hiện khi giỏ khác rỗng, nên
-        nếu bấm thẳng mà giỏ rỗng thì lỗi báo ra rất khó hiểu.
-        """
         expect(self.line_items.first).to_be_visible()
         self.page.click("a:has-text('Tiến hành đặt hàng')")
         return CheckoutPage(self.page, self.base_url)

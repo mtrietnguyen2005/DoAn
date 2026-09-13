@@ -32,7 +32,7 @@ def login_view(request):
         user = form.get_user()
         login(request, user)
         if not form.cleaned_data.get("remember_me"):
-            request.session.set_expiry(0)  # hết phiên khi đóng trình duyệt
+            request.session.set_expiry(0)
         messages.success(request, f"Xin chào {user.display_name}!")
         return redirect(request.GET.get("next") or "core:home")
     return render(request, "accounts/login.html", {"form": form})
@@ -77,7 +77,6 @@ def password_change_view(request):
     return render(request, "accounts/password_change.html", {"form": form})
 
 
-# ---------------------------------------------------------------- Địa chỉ
 @login_required
 def address_list(request):
     return render(request, "accounts/address_list.html", {"addresses": request.user.addresses.all()})
@@ -125,7 +124,6 @@ def address_set_default(request, pk):
     return redirect("accounts:address_list")
 
 
-# ---------------------------------------------------------------- Đánh giá của tôi
 @login_required
 def my_reviews(request):
     reviews = Review.objects.filter(user=request.user).select_related("product").order_by("-created_at")

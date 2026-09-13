@@ -1,4 +1,3 @@
-"""Đọc kết quả pytest, gom nhóm lỗi giống nhau và đính kèm ảnh chụp màn hình."""
 from __future__ import annotations
 
 import hashlib
@@ -11,33 +10,27 @@ from .redact import loc_van_ban
 
 THU_MUC_ANH = Path("tests/e2e/screenshots")
 
-#: Cắt bớt traceback để không gửi thừa dữ liệu ra ngoài
 GIOI_HAN_TRACEBACK = 4000
 
-#: Chuẩn hoá các phần thay đổi giữa các lần chạy, để lỗi giống nhau gom được vào một nhóm
 CHUAN_HOA = [
     (re.compile(r"0x[0-9a-fA-F]+"), "0xĐỊA_CHỈ"),
     (re.compile(r"\b\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}[^\s'\"]*"), "<thời-điểm>"),
     (re.compile(r"\bDH\d{11,}\b"), "<mã-đơn>"),
     (re.compile(r"\bhttp://[^\s'\"]+"), "<địa-chỉ>"),
     (re.compile(r"line \d+"), "line <n>"),
-    # Chuẩn hoá MỌI con số: "assert 2 == 1" và "assert 4 == 1" cùng bản chất lỗi.
-    # Chỉ dùng biên \b ở ĐẦU: "30000ms" không có biên từ ở cuối vì "m" cũng là
-    # ký tự từ, dùng \b\d+\b sẽ bỏ sót những trường hợp như vậy.
     (re.compile(r"\b\d+"), "<số>"),
 ]
 
 
 @dataclass
 class CaLoi:
-    """Một ca kiểm thử thất bại."""
 
-    ma: str                      # node id đầy đủ của pytest
+    ma: str
     tep: str
     lop: str
     ten: str
-    tang: str                    # unit / integration / e2e
-    giai_doan: str               # setup / call / teardown
+    tang: str
+    giai_doan: str
     loai_loi: str
     thong_diep: str
     traceback: str
@@ -46,14 +39,12 @@ class CaLoi:
 
     @property
     def van_tay(self) -> str:
-        """Dấu vân tay để gom các lỗi cùng bản chất vào một nhóm."""
         goc = f"{self.loai_loi}|{chuan_hoa(self.thong_diep)}"
         return hashlib.sha1(goc.encode("utf-8")).hexdigest()[:10]
 
 
 @dataclass
 class NhomLoi:
-    """Nhiều ca thất bại cùng một nguyên nhân."""
 
     van_tay: str
     loai_loi: str
@@ -70,7 +61,6 @@ class NhomLoi:
 
 
 def chuan_hoa(van_ban: str) -> str:
-    """Bỏ các phần thay đổi giữa các lần chạy (địa chỉ bộ nhớ, thời gian, mã đơn...)."""
     ket_qua = van_ban or ""
     for mau, thay in CHUAN_HOA:
         ket_qua = mau.sub(thay, ket_qua)
@@ -85,7 +75,6 @@ def _tang_tu_duong_dan(duong_dan: str) -> str:
 
 
 def _tim_anh(ten_test: str) -> str | None:
-    """Tìm ảnh chụp màn hình mà fixture E2E đã lưu khi test gãy."""
     if not THU_MUC_ANH.exists():
         return None
     goc = ten_test.split("[")[0]
@@ -96,7 +85,6 @@ def _tim_anh(ten_test: str) -> str | None:
 
 
 def doc_bao_cao(duong_dan: str | Path) -> dict:
-    """Đọc tệp JSON do pytest-json-report sinh ra."""
     duong_dan = Path(duong_dan)
     if not duong_dan.exists():
         raise FileNotFoundError(
@@ -107,14 +95,6 @@ def doc_bao_cao(duong_dan: str | Path) -> dict:
 
 
 def doc_nhieu_bao_cao(cac_duong_dan) -> dict:
-    """Gộp nhiều tệp kết quả thành một.
-
-    Dùng khi chạy test làm nhiều lượt, ví dụ tách E2E ra chạy riêng:
-
-        pytest --json-report --json-report-file=reports/a.json
-        pytest -m e2e --json-report --json-report-file=reports/b.json
-        python -m tools.ai_report --input reports/a.json reports/b.json
-    """
     cac_bao_cao = [doc_bao_cao(d) for d in cac_duong_dan]
     if len(cac_bao_cao) == 1:
         return cac_bao_cao[0]
@@ -131,7 +111,6 @@ def doc_nhieu_bao_cao(cac_duong_dan) -> dict:
 
 
 def trich_ca_loi(bao_cao: dict) -> list[CaLoi]:
-    """Lấy ra các ca thất bại, đã lọc thông tin nhạy cảm."""
     ket_qua: list[CaLoi] = []
     for ca in bao_cao.get("tests", []):
         if ca.get("outcome") not in ("failed", "error"):
@@ -143,7 +122,6 @@ def trich_ca_loi(bao_cao: dict) -> list[CaLoi]:
 
             tb_tho = chi_tiet.get("longrepr") or ""
             dong_cuoi = tb_tho.strip().splitlines()[-1] if tb_tho.strip() else ""
-            # pytest thêm tiền tố "E   " vào dòng lỗi — bỏ đi cho gọn
             thong_diep = re.sub(r"^E\s+", "", dong_cuoi).strip() or "(không có thông báo)"
             loai = thong_diep.split(":")[0].strip() if ":" in thong_diep else "Lỗi không rõ loại"
 
@@ -167,7 +145,6 @@ def trich_ca_loi(bao_cao: dict) -> list[CaLoi]:
 
 
 def gom_nhom(cac_ca: list[CaLoi]) -> list[NhomLoi]:
-    """Gom các ca cùng bản chất lỗi. Nhóm đông nhất xếp trước."""
     theo_van_tay: dict[str, NhomLoi] = {}
     for ca in cac_ca:
         nhom = theo_van_tay.get(ca.van_tay)
@@ -180,7 +157,6 @@ def gom_nhom(cac_ca: list[CaLoi]) -> list[NhomLoi]:
 
 
 def tom_tat(bao_cao: dict) -> dict:
-    """Số liệu tổng quan của lần chạy."""
     tk = bao_cao.get("summary", {})
     return {
         "tong": tk.get("total", 0),
@@ -193,7 +169,6 @@ def tom_tat(bao_cao: dict) -> dict:
 
 
 def sang_dict(nhom: NhomLoi) -> dict:
-    """Chuyển nhóm lỗi sang dict để ghi tệp hoặc gửi lên API."""
     return {
         "van_tay": nhom.van_tay,
         "loai_loi": nhom.loai_loi,

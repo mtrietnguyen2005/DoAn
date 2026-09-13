@@ -6,7 +6,6 @@ register = template.Library()
 
 @register.filter
 def vnd(value):
-    """Định dạng số tiền theo kiểu Việt Nam: 1.250.000đ"""
     try:
         return f"{int(value):,}".replace(",", ".") + "đ"
     except (TypeError, ValueError):
@@ -15,7 +14,6 @@ def vnd(value):
 
 @register.filter
 def stars(rating):
-    """Hiển thị chuỗi sao từ điểm đánh giá."""
     try:
         rating = int(round(float(rating or 0)))
     except (TypeError, ValueError):
@@ -25,7 +23,6 @@ def stars(rating):
 
 @register.simple_tag(takes_context=True)
 def query_replace(context, **kwargs):
-    """Ghi đè tham số trên querystring hiện tại (dùng cho phân trang, sắp xếp)."""
     query = context["request"].GET.copy()
     for key, value in kwargs.items():
         if value in (None, ""):
@@ -33,7 +30,7 @@ def query_replace(context, **kwargs):
         else:
             query[key] = value
     if "page" not in kwargs:
-        query.pop("page", None)  # đổi bộ lọc thì quay lại trang 1
+        query.pop("page", None)
     return query.urlencode()
 
 

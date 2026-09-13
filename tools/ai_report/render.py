@@ -1,4 +1,3 @@
-"""Xuất báo cáo ra Markdown và HTML."""
 from __future__ import annotations
 
 import html
@@ -26,7 +25,6 @@ def dung_markdown(tom_tat, cac_nhom, ket_qua_ai, xu_huong) -> str:
     d.append(f"*Sinh lúc {datetime.now():%H:%M %d/%m/%Y}*")
     d.append("")
 
-    # --- Tổng quan ---
     trang_thai = "✅ TẤT CẢ ĐỀU ĐẠT" if tom_tat["hong"] == 0 else f"❌ {tom_tat['hong']} CA THẤT BẠI"
     d.append(f"## {trang_thai}")
     d.append("")
@@ -39,7 +37,6 @@ def dung_markdown(tom_tat, cac_nhom, ket_qua_ai, xu_huong) -> str:
     d.append(f"| Thời gian chạy | {tom_tat['thoi_gian']}s |")
     d.append("")
 
-    # --- Xu hướng ---
     if xu_huong.get("co_lan_truoc"):
         d.append("## 📈 So với lần chạy trước")
         d.append("")
@@ -64,7 +61,6 @@ def dung_markdown(tom_tat, cac_nhom, ket_qua_ai, xu_huong) -> str:
         d.append("Không có lỗi nào để phân tích. 🎉")
         return "\n".join(d)
 
-    # --- Nhận định của AI ---
     ai = _phan_tich_theo_van_tay(ket_qua_ai)
     if ket_qua_ai is not None:
         d.append("## 🧠 Nhận định chung")
@@ -77,7 +73,6 @@ def dung_markdown(tom_tat, cac_nhom, ket_qua_ai, xu_huong) -> str:
         d.append("> thông tin gom nhóm và traceback gốc.")
         d.append("")
 
-    # --- Chi tiết từng nhóm ---
     d.append(f"## 🔍 Chi tiết {len(cac_nhom)} nhóm lỗi")
     d.append("")
     for i, nhom in enumerate(cac_nhom, 1):

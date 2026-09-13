@@ -1,4 +1,3 @@
-"""Tạo dữ liệu mẫu để chạy thử website: python manage.py seed_data"""
 import random
 from datetime import timedelta
 from decimal import Decimal
@@ -36,7 +35,6 @@ SUPPLIERS = [
 ]
 
 PRODUCTS = [
-    # (danh mục, thương hiệu, tên, giá, giá KM, mô tả ngắn, thông số)
     (0, 0, "Intel Core i5-13400F (10 nhân / 16 luồng, 2.5GHz - 4.6GHz)", 4290000, 3990000,
      "CPU 10 nhân 16 luồng, hiệu năng gaming xuất sắc trong tầm giá.",
      "Socket: LGA 1700\nSố nhân: 10 (6P + 4E)\nSố luồng: 16\nXung nhịp: 2.5GHz - 4.6GHz\nCache: 20MB\nTDP: 65W"),
@@ -136,7 +134,6 @@ class Command(BaseCommand):
             Banner.objects.all().delete()
             PromoCode.objects.all().delete()
 
-        # --- Tài khoản ---
         admin, created = User.objects.get_or_create(
             username="admin",
             defaults={"email": "admin@linhkienpc.vn", "is_staff": True, "is_superuser": True,
@@ -160,7 +157,6 @@ class Command(BaseCommand):
             customers.append(user)
         self.stdout.write(self.style.SUCCESS("  ✓ 5 tài khoản khách hàng: khachhang1..5 / khachhang123"))
 
-        # --- Danh mục, thương hiệu, nhà cung cấp ---
         categories = [
             Category.objects.get_or_create(name=name, defaults={"icon": icon, "display_order": index})[0]
             for index, (name, icon) in enumerate(CATEGORIES)
@@ -181,7 +177,6 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(
             f"  ✓ {len(categories)} danh mục, {len(brands)} thương hiệu, {len(suppliers)} nhà cung cấp"))
 
-        # --- Sản phẩm + lô hàng ---
         today = timezone.localdate()
         created_products = []
         for index, (cat_index, brand_index, name, price, sale, short, specs) in enumerate(PRODUCTS, start=1):
@@ -219,7 +214,6 @@ class Command(BaseCommand):
                     receive_batch(batch, user=admin, note=f"Nhập lô {batch.batch_code}")
         self.stdout.write(self.style.SUCCESS(f"  ✓ {len(created_products)} sản phẩm kèm lô hàng"))
 
-        # --- Đánh giá ---
         review_count = 0
         for product in created_products:
             for user in random.sample(customers, random.randint(0, 3)):
@@ -239,7 +233,6 @@ class Command(BaseCommand):
                 review_count += int(created)
         self.stdout.write(self.style.SUCCESS(f"  ✓ {review_count} đánh giá"))
 
-        # --- Tin tức ---
         for title, summary, tags in NEWS_POSTS:
             News.objects.get_or_create(
                 title=title,
@@ -252,7 +245,6 @@ class Command(BaseCommand):
             )
         self.stdout.write(self.style.SUCCESS(f"  ✓ {len(NEWS_POSTS)} bài tin tức"))
 
-        # --- Khuyến mãi & mã giảm giá ---
         promotion, created = Promotion.objects.get_or_create(
             title="Đại tiệc linh kiện – Giảm đến 20%",
             defaults={

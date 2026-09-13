@@ -1,13 +1,3 @@
-"""GIAI ĐOẠN 1 — Unit Test tầng Service (nghiệp vụ cốt lõi).
-
-Kiểm thử ``apps/inventory/services.py`` và ``apps/orders/services.py``:
-
-* Xuất kho theo FIFO, ưu tiên lô có hạn sử dụng sớm nhất
-* Ghi vết mọi giao dịch kho (nhập / xuất / hoàn trả / điều chỉnh)
-* Lưu giá vốn (COGS) bình quân gia quyền tại thời điểm bán
-* Tính tổng tiền: Giá × Số lượng + Phí ship − Giảm giá
-* Đổi trạng thái đơn và hoàn trả tồn kho về ĐÚNG lô ban đầu khi huỷ đơn
-"""
 from decimal import Decimal
 
 import pytest
@@ -26,13 +16,9 @@ from apps.orders.services import (
 pytestmark = pytest.mark.django_db
 
 
-# ============================================================================
-# 1. NGHIỆP VỤ KHO — XUẤT KHO FIFO
-# ============================================================================
 @pytest.mark.unit
 @pytest.mark.inventory
 class TestAllocateStock:
-    """``allocate_stock`` phải lấy hàng từ lô nhập kho sớm nhất trước."""
 
     def test_uu_tien_lo_nhap_kho_som_nhat(self, product_with_batches, batch_early):
         allocations = allocate_stock(product_with_batches, 3, reference="TEST")
@@ -48,8 +34,8 @@ class TestAllocateStock:
 
         batch_early.refresh_from_db()
         batch_late.refresh_from_db()
-        assert batch_early.quantity_remaining == 1   # 4 - 3
-        assert batch_late.quantity_remaining == 10   # chưa đụng tới
+        assert batch_early.quantity_remaining == 1
+        assert batch_late.quantity_remaining == 10
         assert product_with_batches.stock_quantity == 11
 
     def test_lay_tran_sang_lo_ke_tiep_khi_lo_dau_khong_du(self, product_with_batches, batch_early, batch_late):
@@ -62,11 +48,6 @@ class TestAllocateStock:
         assert batch_late.quantity_remaining == 8
 
     def test_hai_lo_cung_ngay_nhap_xep_theo_id(self, product, batch_factory):
-        """Cùng ngày nhập thì lô tạo trước (id nhỏ hơn) được xuất trước.
-
-        Ràng buộc này giữ cho thứ tự xuất kho luôn xác định, không phụ thuộc
-        vào cách cơ sở dữ liệu trả về hàng.
-        """
         lo_truoc = batch_factory(product, quantity=5, cost_price=900000,
                                  received_days_ago=7, batch_code="LO-A")
         lo_sau = batch_factory(product, quantity=5, cost_price=1100000,
@@ -83,7 +64,6 @@ class TestAllocateStock:
         assert "không đủ" in str(exc.value)
 
     def test_khong_tru_kho_khi_xuat_that_bai(self, product_with_batches):
-        """Giao dịch phải nguyên tử: thất bại thì tồn kho giữ nguyên."""
         ton_kho_truoc = product_with_batches.stock_quantity
         with pytest.raises(OutOfStockError):
             allocate_stock(product_with_batches, 999)
@@ -104,15 +84,14 @@ class TestAllocateStock:
 @pytest.mark.unit
 @pytest.mark.inventory
 class TestStockTransactionLog:
-    """Mọi biến động kho đều phải để lại dấu vết truy xuất được."""
 
     def test_ghi_vet_giao_dich_xuat_kho(self, product_with_batches, batch_early):
         allocate_stock(product_with_batches, 3, reference="DH001", note="Bán hàng")
 
         tx = StockTransaction.objects.get(reference="DH001")
         assert tx.transaction_type == StockTransaction.Type.OUT
-        assert tx.quantity == -3           # số âm = giảm tồn
-        assert tx.quantity_after == 1      # tồn của lô sau giao dịch
+        assert tx.quantity == -3
+        assert tx.quantity_after == 1
         assert tx.batch_id == batch_early.pk
         assert tx.note == "Bán hàng"
 
@@ -137,7 +116,6 @@ class TestStockTransactionLog:
 @pytest.mark.unit
 @pytest.mark.inventory
 class TestReturnAndAdjustStock:
-    """Hoàn trả và điều chỉnh thủ công."""
 
     def test_hoan_tra_ve_dung_lo_ban_dau(self, product_with_batches, batch_early, batch_late):
         allocate_stock(product_with_batches, 4, reference="DH004")
@@ -148,8 +126,8 @@ class TestReturnAndAdjustStock:
 
         batch_early.refresh_from_db()
         batch_late.refresh_from_db()
-        assert batch_early.quantity_remaining == 4   # trả đúng chỗ cũ
-        assert batch_late.quantity_remaining == 10   # không dồn sang lô khác
+        assert batch_early.quantity_remaining == 4
+        assert batch_late.quantity_remaining == 10
 
     def test_ghi_vet_giao_dich_hoan_tra(self, product_with_batches, batch_early):
         allocate_stock(product_with_batches, 2, reference="DH005")
@@ -170,28 +148,24 @@ class TestReturnAndAdjustStock:
         batch_late.refresh_from_db()
         assert batch_late.quantity_remaining == 4
         tx = StockTransaction.objects.get(transaction_type=StockTransaction.Type.ADJUST)
-        assert tx.quantity == -6          # 4 - 10
+        assert tx.quantity == -6
         assert tx.note == "Kiểm kê phát hiện thiếu"
 
     def test_dieu_chinh_tang_vuot_so_luong_nhap_thi_noi_rong_so_luong_nhap(self, batch_early):
-        adjust_batch(batch_early, 10)     # lô chỉ nhập 4
+        adjust_batch(batch_early, 10)
 
         batch_early.refresh_from_db()
         assert batch_early.quantity_remaining == 10
-        assert batch_early.quantity_in == 10   # nới theo để dữ liệu không mâu thuẫn
+        assert batch_early.quantity_in == 10
 
     def test_dieu_chinh_khong_doi_thi_khong_ghi_giao_dich(self, batch_early):
         adjust_batch(batch_early, batch_early.quantity_remaining)
         assert StockTransaction.objects.count() == 0
 
 
-# ============================================================================
-# 2. NGHIỆP VỤ TÀI CHÍNH — PHÍ SHIP, GIẢM GIÁ, GIÁ VỐN
-# ============================================================================
 @pytest.mark.unit
 @pytest.mark.finance
 class TestShippingFee:
-    """Miễn phí vận chuyển khi đơn đạt ngưỡng cấu hình."""
 
     def test_don_nho_phai_tra_phi_ship(self, settings):
         assert calculate_shipping_fee(Decimal(1000000)) == Decimal(settings.DEFAULT_SHIPPING_FEE)
@@ -210,18 +184,16 @@ class TestShippingFee:
 @pytest.mark.unit
 @pytest.mark.finance
 class TestOrderCOGS:
-    """Giá vốn phải được chụp lại tại thời điểm bán, không phụ thuộc giá nhập sau này."""
 
     def test_luu_gia_von_cua_lo_duoc_xuat(self, product_with_batches, order_factory):
         order = order_factory(product_with_batches, quantity=2)
 
         item = order.items.get()
-        assert item.cost_price == Decimal(1000000)   # giá vốn lô sớm
-        assert item.unit_price == Decimal(1500000)   # giá bán
-        assert item.line_profit == Decimal(1000000)  # (1,5tr - 1tr) × 2
+        assert item.cost_price == Decimal(1000000)
+        assert item.unit_price == Decimal(1500000)
+        assert item.line_profit == Decimal(1000000)
 
     def test_gia_von_la_binh_quan_gia_quyen_khi_lay_tu_nhieu_lo(self, product_with_batches, order_factory):
-        # 4 sản phẩm lô sớm (1.000.000) + 2 sản phẩm lô muộn (1.200.000)
         order = order_factory(product_with_batches, quantity=6)
 
         item = order.items.get()
@@ -233,7 +205,6 @@ class TestOrderCOGS:
         order = order_factory(product_with_batches, quantity=2)
         gia_von_luc_ban = order.items.get().cost_price
 
-        # Sau đó nhập lô mới với giá vốn cao gấp đôi
         batch_factory(product_with_batches, quantity=50, cost_price=2000000)
 
         order.items.get().refresh_from_db()
@@ -258,10 +229,9 @@ class TestOrderCOGS:
 @pytest.mark.unit
 @pytest.mark.finance
 class TestOrderTotalCalculation:
-    """Công thức tổng tiền: (Giá × Số lượng) + Phí ship − Giảm giá."""
 
     def test_don_nho_cong_them_phi_ship(self, product_with_batches, order_factory, settings):
-        order = order_factory(product_with_batches, quantity=1)   # 1.500.000đ
+        order = order_factory(product_with_batches, quantity=1)
 
         assert order.subtotal == Decimal(1500000)
         assert order.shipping_fee == Decimal(settings.DEFAULT_SHIPPING_FEE)
@@ -269,7 +239,7 @@ class TestOrderTotalCalculation:
         assert order.total == Decimal(1500000) + Decimal(settings.DEFAULT_SHIPPING_FEE)
 
     def test_don_lon_duoc_mien_phi_ship(self, product_with_batches, order_factory):
-        order = order_factory(product_with_batches, quantity=2)   # 3.000.000đ > ngưỡng 2.000.000đ
+        order = order_factory(product_with_batches, quantity=2)
 
         assert order.subtotal == Decimal(3000000)
         assert order.shipping_fee == Decimal(0)
@@ -278,8 +248,8 @@ class TestOrderTotalCalculation:
     def test_ap_dung_ma_giam_theo_phan_tram(self, product_with_batches, order_factory, promo_percent):
         order = order_factory(product_with_batches, quantity=2, promo=promo_percent)
 
-        assert order.discount_amount == Decimal(300000)   # 10% của 3.000.000
-        assert order.total == Decimal(2700000)            # 3.000.000 + 0 − 300.000
+        assert order.discount_amount == Decimal(300000)
+        assert order.total == Decimal(2700000)
         assert order.promo_code == promo_percent
 
     def test_ma_giam_gia_tang_bo_dem_luot_su_dung(self, product_with_batches, order_factory, promo_percent):
@@ -291,7 +261,7 @@ class TestOrderTotalCalculation:
         batch_factory(discounted_product, quantity=5, cost_price=5000000)
         order = order_factory(discounted_product, quantity=1)
 
-        assert order.items.get().unit_price == Decimal(7000000)   # dùng giá sale
+        assert order.items.get().unit_price == Decimal(7000000)
         assert order.subtotal == Decimal(7000000)
 
     def test_don_nhieu_dong_hang_cong_don_dung(self, product_with_batches, product_factory,
@@ -304,20 +274,16 @@ class TestOrderTotalCalculation:
             cart=cart_factory((product_with_batches, 2), (khac, 3)),
             receiver_name="A", receiver_phone="0900000000", shipping_address="x",
         )
-        # 1.500.000×2 + 1.000.000×3 = 6.000.000
         assert order.subtotal == Decimal(6000000)
         assert order.items.count() == 2
         assert order.total_quantity == 5
 
 
-# ============================================================================
-# 3. TẠO ĐƠN HÀNG — TÁC ĐỘNG LÊN KHO VÀ LỊCH SỬ
-# ============================================================================
 @pytest.mark.unit
 class TestCreateOrder:
     def test_tru_kho_khi_dat_hang(self, product_with_batches, order_factory):
         order_factory(product_with_batches, quantity=3)
-        assert product_with_batches.stock_quantity == 11   # 14 - 3
+        assert product_with_batches.stock_quantity == 11
 
     def test_ghi_lich_su_trang_thai_ban_dau(self, order):
         history = order.status_history.get()
@@ -350,7 +316,6 @@ class TestCreateOrder:
             create_order(user=customer, cart=cart_factory((product_with_batches, 999)),
                          receiver_name="A", receiver_phone="0900000000", shipping_address="x")
 
-        # Toàn bộ giao dịch phải được huỷ bỏ, không để lại dữ liệu rác
         assert Order.objects.count() == 0
         assert product_with_batches.stock_quantity == 14
 
@@ -367,9 +332,6 @@ class TestCreateOrder:
         assert order.payment_method == Order.PaymentMethod.COD
 
 
-# ============================================================================
-# 4. ĐỔI TRẠNG THÁI VÀ HUỶ ĐƠN — HOÀN KHO ĐÚNG LÔ
-# ============================================================================
 @pytest.mark.unit
 class TestChangeOrderStatus:
     def test_ghi_lich_su_moi_lan_doi_trang_thai(self, order, superuser):
@@ -408,7 +370,6 @@ class TestChangeOrderStatus:
             change_order_status(order, Order.Status.SHIPPING)
 
     def test_van_cho_phep_huy_don_da_hoan_thanh(self, order):
-        """Quản trị viên vẫn có thể huỷ đơn đã hoàn thành (ví dụ khách trả hàng)."""
         change_order_status(order, Order.Status.COMPLETED)
         change_order_status(order, Order.Status.CANCELLED)
         assert order.status == Order.Status.CANCELLED
@@ -422,11 +383,10 @@ class TestChangeOrderStatus:
 @pytest.mark.unit
 @pytest.mark.inventory
 class TestCancelOrderRestoresStock:
-    """Yêu cầu cốt lõi: huỷ đơn phải hoàn hàng về ĐÚNG lô đã xuất."""
 
     def test_huy_don_hoan_lai_dung_tung_lo(self, product_with_batches, order_factory,
                                            batch_early, batch_late, customer):
-        order = order_factory(product_with_batches, quantity=6)   # 4 lô sớm + 2 lô muộn
+        order = order_factory(product_with_batches, quantity=6)
         batch_early.refresh_from_db()
         batch_late.refresh_from_db()
         assert (batch_early.quantity_remaining, batch_late.quantity_remaining) == (0, 8)
@@ -435,8 +395,8 @@ class TestCancelOrderRestoresStock:
 
         batch_early.refresh_from_db()
         batch_late.refresh_from_db()
-        assert batch_early.quantity_remaining == 4    # trả đúng 4 về lô sớm
-        assert batch_late.quantity_remaining == 10    # trả đúng 2 về lô muộn
+        assert batch_early.quantity_remaining == 4
+        assert batch_late.quantity_remaining == 10
         assert product_with_batches.stock_quantity == 14
 
     def test_huy_don_ghi_vet_giao_dich_hoan_kho(self, order, customer):
@@ -455,7 +415,7 @@ class TestCancelOrderRestoresStock:
         cancel_order(order, user=customer)
         ton_kho = product_with_batches.stock_quantity
 
-        restore_stock(order, user=customer)   # gọi lại lần nữa
+        restore_stock(order, user=customer)
         assert product_with_batches.stock_quantity == ton_kho
 
     def test_huy_don_hoan_lai_luot_dung_ma_giam_gia(self, product_with_batches, order_factory,

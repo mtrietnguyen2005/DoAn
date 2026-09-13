@@ -46,12 +46,11 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
 
     @admin.display(description="Họ tên")
     def full_name(self, obj):
-        return obj.get_full_name() or "—"  # đã ghép theo thứ tự Họ + Tên
+        return obj.get_full_name() or "—"
 
 
 @admin.register(Address)
 class AddressAdmin(ReadOnlyForStaffMixin, ModelAdmin):
-    """Chỉ đọc với Admin thường (theo yêu cầu phân quyền)."""
 
     list_display = ("full_name", "user", "phone", "province", "district", "is_default", "created_at")
     list_filter = ("is_default", "province")

@@ -67,7 +67,6 @@ class OrderAdmin(ModelAdmin):
     )
 
     def save_model(self, request, obj, form, change):
-        """Đổi trạng thái qua service để luôn ghi lịch sử và hoàn kho khi hủy."""
         if change and "status" in form.changed_data:
             new_status = obj.status
             obj.status = form.initial.get("status", obj.status)

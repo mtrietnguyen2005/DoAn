@@ -37,7 +37,6 @@ class BatchAdmin(ModelAdmin):
 
 @admin.register(StockTransaction)
 class StockTransactionAdmin(ReadOnlyForStaffMixin, ModelAdmin):
-    """Chỉ đọc với Admin thường (theo yêu cầu phân quyền) — đây là sổ nhật ký kho."""
 
     list_display = ("created_at", "transaction_type", "product", "batch", "quantity_display", "quantity_after", "reference", "created_by")
     list_filter = ("transaction_type", "created_at", "product__category")

@@ -1,4 +1,3 @@
-"""Kiểm thử tích hợp: luồng xác thực qua HTTP (không cần trình duyệt)."""
 import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse

@@ -5,10 +5,9 @@ from apps.orders.cart import Cart
 
 
 def shop_context(request):
-    """Biến dùng chung cho toàn bộ template: menu danh mục, giỏ hàng, thông tin cửa hàng."""
     try:
         cart_count = len(Cart(request))
-    except Exception:  # session chưa sẵn sàng (ví dụ khi render trang lỗi)
+    except Exception:
         cart_count = 0
 
     return {

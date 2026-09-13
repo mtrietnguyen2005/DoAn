@@ -1,9 +1,3 @@
-"""Kiểm thử công cụ phân tích log lỗi bằng AI.
-
-Chỉ kiểm thử phần TẤT ĐỊNH (lọc thông tin nhạy cảm, gom nhóm, so sánh lịch sử,
-xuất báo cáo). Phần gọi API không kiểm thử ở đây vì kết quả không tất định và
-tốn chi phí — nó được giả lập bằng đối tượng thay thế.
-"""
 import json
 from pathlib import Path
 
@@ -14,11 +8,7 @@ from tools.ai_report import collect, history, redact, render
 pytestmark = pytest.mark.unit
 
 
-# ============================================================================
-# LỌC THÔNG TIN NHẠY CẢM — phần quan trọng nhất về mặt an toàn
-# ============================================================================
 class TestLocThongTinNhayCam:
-    """Không được để lọt mật khẩu, khoá API hay đường dẫn cá nhân ra ngoài."""
 
     @pytest.mark.parametrize("dau_vao,khong_duoc_chua", [
         ("DB_PASSWORD=MatKhauSieuBiMat123", "MatKhauSieuBiMat123"),
@@ -37,7 +27,6 @@ class TestLocThongTinNhayCam:
         assert redact.NHAN_CHE in ket_qua
 
     def test_giu_nguyen_email_dung_trong_test(self):
-        """Email của dữ liệu test không phải thông tin thật, giữ lại cho dễ đọc."""
         assert "khachhang@test.vn" in redact.loc_van_ban("user = 'khachhang@test.vn'")
 
     def test_khong_con_sot_sau_khi_loc(self):
@@ -46,7 +35,6 @@ class TestLocThongTinNhayCam:
         assert redact.kiem_tra_con_sot(redact.loc_van_ban(ban_do)) == []
 
     def test_loc_hai_lan_cho_ket_qua_giong_nhau(self):
-        """Lọc lại chuỗi đã lọc không được làm hỏng thêm."""
         goc = "DB_PASSWORD=bimat và PWD=khac"
         mot_lan = redact.loc_van_ban(goc)
         assert redact.loc_van_ban(mot_lan) == mot_lan
@@ -62,12 +50,8 @@ class TestLocThongTinNhayCam:
         assert redact.loc_van_ban(None) == ""
 
 
-# ============================================================================
-# ĐỌC KẾT QUẢ VÀ GOM NHÓM
-# ============================================================================
 @pytest.fixture
 def bao_cao_mau(tmp_path):
-    """Tệp kết quả pytest giả lập, có 3 ca hỏng thuộc 2 bản chất lỗi."""
     du_lieu = {
         "created": 1700000000, "duration": 12.34,
         "summary": {"total": 100, "passed": 97, "failed": 3},
@@ -96,7 +80,7 @@ class TestDocKetQua:
     def test_bao_loi_khi_thieu_tep(self, tmp_path):
         with pytest.raises(FileNotFoundError) as loi:
             collect.doc_bao_cao(tmp_path / "khong-co.json")
-        assert "--json-report" in str(loi.value)   # gợi ý lệnh cần chạy
+        assert "--json-report" in str(loi.value)
 
     def test_tom_tat_dung_so_lieu(self, bao_cao_mau):
         tt = collect.tom_tat(collect.doc_bao_cao(bao_cao_mau))
@@ -118,7 +102,6 @@ class TestDocKetQua:
         assert "AssertionError" in {c.loai_loi for c in cac_ca}
 
     def test_traceback_da_duoc_loc(self, bao_cao_mau):
-        """Đây là điểm mấu chốt: traceback tuyệt đối không được mang mật khẩu."""
         cac_ca = collect.trich_ca_loi(collect.doc_bao_cao(bao_cao_mau))
         toan_bo = " ".join(c.traceback for c in cac_ca)
         assert "SieuBiMat99" not in toan_bo
@@ -126,7 +109,6 @@ class TestDocKetQua:
 
 
 class TestGopNhieuTepKetQua:
-    """Chạy test làm nhiều lượt (tách E2E ra riêng) rồi gộp kết quả lại."""
 
     @pytest.fixture
     def hai_tep(self, tmp_path):
@@ -148,10 +130,10 @@ class TestGopNhieuTepKetQua:
     def test_cong_don_so_lieu(self, hai_tep):
         gop = collect.doc_nhieu_bao_cao(hai_tep)
         tt = collect.tom_tat(gop)
-        assert tt["tong"] == 15          # 10 + 5
-        assert tt["dat"] == 14           # 9 + 5
+        assert tt["tong"] == 15
+        assert tt["dat"] == 14
         assert tt["hong"] == 1
-        assert tt["thoi_gian"] == 35.0   # 5 + 30
+        assert tt["thoi_gian"] == 35.0
 
     def test_gom_du_cac_ca_tu_moi_tep(self, hai_tep):
         gop = collect.doc_nhieu_bao_cao(hai_tep)
@@ -169,10 +151,9 @@ class TestGopNhieuTepKetQua:
 
 class TestGomNhom:
     def test_gop_cac_loi_cung_ban_chat(self, bao_cao_mau):
-        """assert 2 == 1 và assert 4 == 1 là cùng một bản chất lỗi."""
         nhom = collect.gom_nhom(collect.trich_ca_loi(collect.doc_bao_cao(bao_cao_mau)))
         assert len(nhom) == 2
-        assert nhom[0].so_luong == 2          # nhóm đông nhất xếp trước
+        assert nhom[0].so_luong == 2
         assert nhom[0].loai_loi == "AssertionError"
 
     def test_khong_gop_loi_khac_ban_chat(self, bao_cao_mau):
@@ -185,7 +166,6 @@ class TestGomNhom:
         assert a == b
 
     def test_van_tay_on_dinh(self, bao_cao_mau):
-        """Chạy lại cùng dữ liệu phải cho cùng vân tay, để so sánh lịch sử có nghĩa."""
         lan1 = collect.gom_nhom(collect.trich_ca_loi(collect.doc_bao_cao(bao_cao_mau)))
         lan2 = collect.gom_nhom(collect.trich_ca_loi(collect.doc_bao_cao(bao_cao_mau)))
         assert [n.van_tay for n in lan1] == [n.van_tay for n in lan2]
@@ -194,9 +174,6 @@ class TestGomNhom:
         assert collect.gom_nhom([]) == []
 
 
-# ============================================================================
-# SO SÁNH VỚI LẦN CHẠY TRƯỚC
-# ============================================================================
 class TestLichSu:
     def test_lan_dau_chay_chua_co_lich_su(self, tmp_path):
         assert history.lan_truoc(tmp_path / "chua-co.json") is None
@@ -210,15 +187,14 @@ class TestLichSu:
         assert truoc["van_tay_loi"] == ["aaa", "bbb"]
 
     def test_thoi_diem_luu_dang_doc_duoc(self, tmp_path):
-        """Dấu thời gian phải là ISO đọc được, không phải số epoch của pytest."""
         tep = tmp_path / "ls.json"
         history.ghi_nhan(
             {"tong": 1, "dat": 1, "hong": 0, "bo_qua": 0, "thoi_gian": 1.0,
-             "thoi_diem": 1788575773.59},          # dấu thời gian thô từ pytest
+             "thoi_diem": 1788575773.59},
             [], tep,
         )
         luu = history.lan_truoc(tep)["thoi_diem"]
-        assert isinstance(luu, str) and luu[:2] == "20"   # dạng 2026-09-05T...
+        assert isinstance(luu, str) and luu[:2] == "20"
 
     def test_nhan_dien_loi_moi_va_loi_da_sua(self):
         truoc = {"hong": 2, "thoi_gian": 10.0, "van_tay_loi": ["cu1", "chung"]}
@@ -246,9 +222,6 @@ class TestLichSu:
         assert history.lan_truoc(tep) is None
 
 
-# ============================================================================
-# XUẤT BÁO CÁO
-# ============================================================================
 class TestXuatBaoCao:
     @pytest.fixture
     def du_lieu(self, bao_cao_mau):
@@ -270,7 +243,6 @@ class TestXuatBaoCao:
             assert "SieuBiMat99" not in tep.read_text(encoding="utf-8")
 
     def test_luon_kem_traceback_goc(self, du_lieu):
-        """Người đọc phải tự kiểm chứng được, không chỉ tin lời AI."""
         tt, nhom, xh = du_lieu
         md = render.dung_markdown(tt, nhom, None, xh)
         assert "traceback gốc" in md.lower()
@@ -298,11 +270,7 @@ class TestXuatBaoCao:
         assert h.rstrip().endswith("</html>")
 
 
-# ============================================================================
-# AN TOÀN KHI GỌI API
-# ============================================================================
 class TestKiemTraKhoaApi:
-    """Chỉ gọi được DeepSeek khi đã cấu hình khoá API tương ứng."""
 
     @pytest.fixture(autouse=True)
     def xoa_bien_moi_truong(self, monkeypatch):
@@ -319,15 +287,9 @@ class TestKiemTraKhoaApi:
 
 
 class TestXuLyPhanHoiDeepSeek:
-    """DeepSeek bảo đảm trả về JSON hợp lệ nhưng KHÔNG bảo đảm đúng lược đồ.
-
-    Vì vậy phải kiểm tra lại bằng Pydantic. Nhóm test này giả lập phản hồi để
-    kiểm chứng đường xử lý mà không cần gọi API thật.
-    """
 
     @staticmethod
     def _gia_lap(monkeypatch, noi_dung_tra_ve: str):
-        """Thay client OpenAI bằng đối tượng giả trả về chuỗi cho trước."""
         import openai
 
         class _TinNhan:
@@ -383,7 +345,6 @@ class TestXuLyPhanHoiDeepSeek:
         assert kq.cac_nhom[0].muc_do == "cao"
 
     def test_phan_hoi_sai_luoc_do_bi_tu_choi(self, monkeypatch, nhom_sach):
-        """AI trả về JSON hợp lệ nhưng thiếu trường bắt buộc thì phải báo lỗi rõ ràng."""
         from pydantic import ValidationError
 
         from tools.ai_report import analyze
@@ -401,7 +362,7 @@ class TestXuLyPhanHoiDeepSeek:
             "nhan_dinh_chung": "x",
             "cac_nhom": [{
                 "van_tay": "abc123", "tieu_de": "y", "nguyen_nhan": "z",
-                "muc_do": "cực kỳ nghiêm trọng",          # không nằm trong danh sách cho phép
+                "muc_do": "cực kỳ nghiêm trọng",
                 "do_tin_cay": "cao", "loi_o_dau": "bài test", "huong_sua": "w",
             }],
         }, ensure_ascii=False)
@@ -412,7 +373,6 @@ class TestXuLyPhanHoiDeepSeek:
 
 class TestRaoChanBaoMat:
     def test_dung_lai_neu_con_sot_thong_tin_nhay_cam(self, monkeypatch):
-        """Rào chắn cuối: phát hiện sót thì DỪNG, tuyệt đối không gửi đi."""
         from tools.ai_report import analyze
 
         monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-gia-lap-de-test")
